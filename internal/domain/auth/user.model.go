@@ -8,6 +8,9 @@ import (
 
 type User struct {
 	ID        uuid.UUID  `db:"id" json:"id"`
+	Nama      string     `db:"nama" json:"nama"`     // Tambahkan ini
+	Email     string     `db:"email" json:"email"`   // Tambahkan ini
+	Foto      *string    `db:"foto" json:"foto"`
 	Username  string     `db:"username" json:"username"`
 	Password  string     `db:"password" json:"-"`
 	RoleID    uuid.UUID  `db:"role_id" json:"roleId"` // <-- Pakai RoleID
@@ -20,6 +23,8 @@ type User struct {
 
 type RequestUserFormat struct {
 	ID       uuid.UUID `json:"id" swaggerignore:"true"`
+	Nama     string    `json:"nama" validate:"required" example:"Daffa Reyhansyah"` // Tambahkan ini
+	Email    string    `json:"email" validate:"required,email" example:"daffa@desa.com"` // Tambahkan ini
 	Username string    `json:"username" validate:"required" example:"kepala_desa_1"`
 	Password string    `json:"password" example:"rahasia123"` 
 	RoleID   uuid.UUID `json:"roleId" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"` // <-- Harus UUID dari tabel roles
@@ -64,4 +69,5 @@ type LoginResponse struct {
 	Token    string `json:"token"`
 	RoleID   string `json:"roleId"`
 	RoleName string `json:"roleName"`
+	User     User   `json:"user"` // Tambahkan ini
 }

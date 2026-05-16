@@ -67,6 +67,7 @@ func (s *userService) Login(req LoginRequest) (LoginResponse, error) {
 		Token:    tokenString,
 		RoleID:   user.RoleID.String(),
 		RoleName: roleName,
+		User:     user, // <-- Data user lengkap disisipkan di sini
 	}, nil
 }
 

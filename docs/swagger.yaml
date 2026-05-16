@@ -12,20 +12,37 @@ definitions:
     - password
     - username
     type: object
+  auth.PermissionFormat:
+    properties:
+      id:
+        type: string
+      permission:
+        type: string
+    type: object
   auth.RequestBulkMenuRole:
     properties:
       data:
         items:
-          $ref: '#/definitions/auth.RequestMenuRoleItem'
+          $ref: '#/definitions/auth.RequestBulkMenuRoleFormat'
         type: array
+    type: object
+  auth.RequestBulkMenuRoleFormat:
+    properties:
+      commodityId:
+        type: integer
+      id:
+        type: string
+      menuId:
+        type: string
+      permission:
+        type: string
       roleId:
         type: string
-    required:
-    - roleId
     type: object
   auth.RequestMenuFormat:
     properties:
       action:
+        description: <-- Ubah ke *string
         type: string
       description:
         type: string
@@ -40,19 +57,17 @@ definitions:
       parentId:
         type: string
       permissionLabel:
+        description: <-- Ubah ke *string
         type: string
       seq:
         type: integer
-    required:
-    - link
-    - name
     type: object
-  auth.RequestMenuRoleItem:
+  auth.RequestMenuPermissionFormat:
     properties:
-      menuId:
-        type: string
-      permission:
-        type: string
+      data:
+        items:
+          $ref: '#/definitions/auth.PermissionFormat'
+        type: array
     type: object
   auth.RequestRole:
     properties:
@@ -67,6 +82,14 @@ definitions:
     type: object
   auth.RequestUserFormat:
     properties:
+      email:
+        description: Tambahkan ini
+        example: daffa@desa.com
+        type: string
+      nama:
+        description: Tambahkan ini
+        example: Daffa Reyhansyah
+        type: string
       password:
         example: rahasia123
         type: string
@@ -78,6 +101,8 @@ definitions:
         example: kepala_desa_1
         type: string
     required:
+    - email
+    - nama
     - roleId
     - username
     type: object
@@ -405,6 +430,26 @@ paths:
         name: Authorization
         required: true
         type: string
+      - description: Keyword Pencarian
+        in: query
+        name: q
+        type: string
+      - description: Ukuran Halaman
+        in: query
+        name: pageSize
+        type: integer
+      - description: Nomor Halaman
+        in: query
+        name: pageNumber
+        type: integer
+      - description: Sort by field
+        in: query
+        name: sortBy
+        type: string
+      - description: Sort type (ASC/DESC)
+        in: query
+        name: sortType
+        type: string
       produces:
       - application/json
       responses:
@@ -412,9 +457,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Ambil semua Master Menu
+      summary: Ambil Semua Menu (Pagination)
       tags:
-      - Menus
+      - Menu
     post:
       consumes:
       - application/json
@@ -437,9 +482,9 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Tambah Master Menu
+      summary: Tambah Menu Baru
       tags:
-      - Menus
+      - Menu
   /v1/menu-role:
     get:
       parameters:
@@ -448,10 +493,14 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Role ID
+      - description: ID Role
         in: query
         name: roleId
         required: true
+        type: string
+      - description: ID Commodity
+        in: query
+        name: commodityId
         type: string
       produces:
       - application/json
@@ -460,9 +509,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Ambil Hierarki Menu by Role ID
+      summary: Ambil Menu by Role ID
       tags:
-      - Menus Role
+      - Menu Role
   /v1/menu-role/bulk:
     post:
       consumes:
@@ -473,7 +522,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Data Mapping
+      - description: Data Bulk Menu Role
         in: body
         name: body
         required: true
@@ -482,13 +531,66 @@ paths:
       produces:
       - application/json
       responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Base'
+      summary: Tambah Bulk Menu Role
+      tags:
+      - Menu Role
+  /v1/menu-role/trx:
+    get:
+      parameters:
+      - description: Bearer <token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID Role
+        in: query
+        name: roleId
+        required: true
+        type: string
+      - description: ID Commodity
+        in: query
+        name: commodityId
+        type: string
+      produces:
+      - application/json
+      responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Pasang Akses Menu ke Role
+      summary: Ambil Menu Transaksi by Role ID
       tags:
-      - Menus Role
+      - Menu Role
+  /v1/menu-role/update-permission:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer <token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Data Menu Permission
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RequestMenuPermissionFormat'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Base'
+      summary: Perbarui Menu Permission
+      tags:
+      - Menu Role
   /v1/menu/{id}:
     delete:
       parameters:
@@ -509,9 +611,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Hapus Master Menu
+      summary: Hapus Menu by ID
       tags:
-      - Menus
+      - Menu
+    get:
+      parameters:
+      - description: Bearer <token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID Menu
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Base'
+      summary: Ambil detail Menu by ID
+      tags:
+      - Menu
     put:
       consumes:
       - application/json
@@ -526,7 +650,7 @@ paths:
         name: id
         required: true
         type: string
-      - description: Data Menu
+      - description: Data Menu yang diperbarui
         in: body
         name: body
         required: true
@@ -539,9 +663,27 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Base'
-      summary: Update Master Menu
+      summary: Perbarui data Menu
       tags:
-      - Menus
+      - Menu
+  /v1/menu/all:
+    get:
+      parameters:
+      - description: Bearer <token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Base'
+      summary: Ambil Semua Menu
+      tags:
+      - Menu
   /v1/pagu-anggaran:
     get:
       parameters:

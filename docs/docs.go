@@ -292,9 +292,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus"
+                    "Menu"
                 ],
-                "summary": "Ambil semua Master Menu",
+                "summary": "Ambil Semua Menu (Pagination)",
                 "parameters": [
                     {
                         "type": "string",
@@ -302,6 +302,36 @@ const docTemplate = `{
                         "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Keyword Pencarian",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ukuran Halaman",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Nomor Halaman",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort by field",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort type (ASC/DESC)",
+                        "name": "sortType",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -321,9 +351,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus"
+                    "Menu"
                 ],
-                "summary": "Tambah Master Menu",
+                "summary": "Tambah Menu Baru",
                 "parameters": [
                     {
                         "type": "string",
@@ -358,9 +388,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus Role"
+                    "Menu Role"
                 ],
-                "summary": "Ambil Hierarki Menu by Role ID",
+                "summary": "Ambil Menu by Role ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -371,10 +401,16 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Role ID",
+                        "description": "ID Role",
                         "name": "roleId",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID Commodity",
+                        "name": "commodityId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -396,9 +432,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus Role"
+                    "Menu Role"
                 ],
-                "summary": "Pasang Akses Menu ke Role",
+                "summary": "Tambah Bulk Menu Role",
                 "parameters": [
                     {
                         "type": "string",
@@ -408,13 +444,122 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Data Mapping",
+                        "description": "Data Bulk Menu Role",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/auth.RequestBulkMenuRole"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Base"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/menu-role/trx": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Menu Role"
+                ],
+                "summary": "Ambil Menu Transaksi by Role ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003ctoken\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID Role",
+                        "name": "roleId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID Commodity",
+                        "name": "commodityId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Base"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/menu-role/update-permission": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Menu Role"
+                ],
+                "summary": "Perbarui Menu Permission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003ctoken\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Menu Permission",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RequestMenuPermissionFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Base"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/menu/all": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Menu"
+                ],
+                "summary": "Ambil Semua Menu",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003ctoken\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -428,6 +573,39 @@ const docTemplate = `{
             }
         },
         "/v1/menu/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Menu"
+                ],
+                "summary": "Ambil detail Menu by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003ctoken\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID Menu",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Base"
+                        }
+                    }
+                }
+            },
             "put": {
                 "consumes": [
                     "application/json"
@@ -436,9 +614,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus"
+                    "Menu"
                 ],
-                "summary": "Update Master Menu",
+                "summary": "Perbarui data Menu",
                 "parameters": [
                     {
                         "type": "string",
@@ -455,7 +633,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Data Menu",
+                        "description": "Data Menu yang diperbarui",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -478,9 +656,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Menus"
+                    "Menu"
                 ],
-                "summary": "Hapus Master Menu",
+                "summary": "Hapus Menu by ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -1607,17 +1785,42 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.PermissionFormat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.RequestBulkMenuRole": {
             "type": "object",
-            "required": [
-                "roleId"
-            ],
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/auth.RequestMenuRoleItem"
+                        "$ref": "#/definitions/auth.RequestBulkMenuRoleFormat"
                     }
+                }
+            }
+        },
+        "auth.RequestBulkMenuRoleFormat": {
+            "type": "object",
+            "properties": {
+                "commodityId": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "menuId": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
                 },
                 "roleId": {
                     "type": "string"
@@ -1626,12 +1829,9 @@ const docTemplate = `{
         },
         "auth.RequestMenuFormat": {
             "type": "object",
-            "required": [
-                "link",
-                "name"
-            ],
             "properties": {
                 "action": {
+                    "description": "\u003c-- Ubah ke *string",
                     "type": "string"
                 },
                 "description": {
@@ -1653,6 +1853,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "permissionLabel": {
+                    "description": "\u003c-- Ubah ke *string",
                     "type": "string"
                 },
                 "seq": {
@@ -1660,14 +1861,14 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.RequestMenuRoleItem": {
+        "auth.RequestMenuPermissionFormat": {
             "type": "object",
             "properties": {
-                "menuId": {
-                    "type": "string"
-                },
-                "permission": {
-                    "type": "string"
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/auth.PermissionFormat"
+                    }
                 }
             }
         },
@@ -1690,10 +1891,22 @@ const docTemplate = `{
         "auth.RequestUserFormat": {
             "type": "object",
             "required": [
+                "email",
+                "nama",
                 "roleId",
                 "username"
             ],
             "properties": {
+                "email": {
+                    "description": "Tambahkan ini",
+                    "type": "string",
+                    "example": "daffa@desa.com"
+                },
+                "nama": {
+                    "description": "Tambahkan ini",
+                    "type": "string",
+                    "example": "Daffa Reyhansyah"
+                },
                 "password": {
                     "type": "string",
                     "example": "rahasia123"
