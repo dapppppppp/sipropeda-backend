@@ -56,7 +56,7 @@ func (u *UsulanProyek) NewUsulanProyekFormat(req RequestUsulanProyek) (newData U
 			Satuan:        req.Satuan,
 			NilaiRAB:      req.NilaiRAB,
 			StatusSifat:   req.StatusSifat,
-			StatusTahapan: "draft_rkp", // Default awal
+			StatusTahapan: "RKP", // Default awal
 			SumberDanaID:  req.SumberDanaID,
 			CreatedBy:     &req.UserID,
 			CreatedAt:     &now,

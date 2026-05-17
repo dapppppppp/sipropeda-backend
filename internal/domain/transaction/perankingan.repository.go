@@ -35,7 +35,7 @@ func (r *perankinganRepository) GetMatriksPenilaian(tahun int, tahap string) ([]
 		SELECT p.usulan_id, p.kriteria_id, p.nilai_input
 		FROM penilaian_usulan p
 		JOIN usulan_proyek u ON p.usulan_id = u.id
-		WHERE u.tahun_anggaran = $1 AND u.status_tahapan = $2 AND u.is_deleted = false
+		WHERE u.tahun_anggaran = $1 AND u.status_tahapan::text = $2::text AND u.is_deleted = false
 	`
 	err := r.db.Read.Select(&data, query, tahun, tahap)
 	return data, err
@@ -50,8 +50,8 @@ func (r *perankinganRepository) SaveHasilPerankingan(data []ArsipPerankingan) er
 	deleteQuery := `
 		DELETE FROM arsip_perankingan 
 		WHERE usulan_id IN (
-			SELECT id FROM usulan_proyek WHERE status_tahapan = $1
-		) AND tahap_versi = $1
+			SELECT id FROM usulan_proyek WHERE status_tahapan::text = $1::text
+		) AND tahap_versi::text = $1::text
 	`
 	_, err := r.db.Write.Exec(deleteQuery, data[0].TahapVersi)
 	if err != nil {
@@ -79,7 +79,7 @@ func (r *perankinganRepository) GetArsip(tahun int, tahap string) ([]ArsipPerank
 		SELECT a.id, a.usulan_id, u.nama_proyek as usulan_name, a.nilai_preferensi_v, a.ranking, a.tahap_versi, a.created_at
 		FROM arsip_perankingan a
 		JOIN usulan_proyek u ON a.usulan_id = u.id
-		WHERE u.tahun_anggaran = $1 AND a.tahap_versi = $2
+		WHERE u.tahun_anggaran = $1 AND a.tahap_versi::text = $2::text
 		ORDER BY a.ranking ASC
 	`
 	err := r.db.Read.Select(&data, query, tahun, tahap)

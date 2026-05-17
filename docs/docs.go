@@ -1474,6 +1474,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/user/reset-password": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset Password User by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003ctoken\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Reset Password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Base"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user/{id}": {
             "get": {
                 "produces": [
@@ -1776,12 +1813,10 @@ const docTemplate = `{
             ],
             "properties": {
                 "password": {
-                    "type": "string",
-                    "example": "password123"
+                    "type": "string"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "admin_desa"
+                    "type": "string"
                 }
             }
         },
@@ -1892,33 +1927,41 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "nama",
+                "name",
                 "roleId",
                 "username"
             ],
             "properties": {
                 "email": {
-                    "description": "Tambahkan ini",
-                    "type": "string",
-                    "example": "daffa@desa.com"
+                    "type": "string"
                 },
-                "nama": {
-                    "description": "Tambahkan ini",
-                    "type": "string",
-                    "example": "Daffa Reyhansyah"
+                "name": {
+                    "description": "\u003c-- MENERIMA JSON: 'name' dari Frontend",
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "example": "rahasia123"
+                    "type": "string"
                 },
                 "roleId": {
-                    "description": "\u003c-- Harus UUID dari tabel roles",
-                    "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                    "type": "string"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "kepala_desa_1"
+                    "type": "string"
+                }
+            }
+        },
+        "auth.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "id",
+                "newPassword"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "newPassword": {
+                    "type": "string"
                 }
             }
         },

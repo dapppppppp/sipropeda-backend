@@ -4,6 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
 	"github.com/gofrs/uuid"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -14,10 +17,11 @@ var jwtSecret = []byte("rahasia-sipropeda-skripsi")
 type UserService interface {
 	Login(req LoginRequest) (LoginResponse, error)
 	Create(req RequestUserFormat) error
-	ResolveAll() ([]User, error)
+	ResolveAll(req model.StandardRequest, roleId string) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (User, error)
 	Update(id string, req RequestUserFormat) error
 	Delete(id string) error
+	ResetPassword(req ResetPasswordRequest) error
 }
 
 type userService struct {
@@ -34,16 +38,10 @@ func (s *userService) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, errors.New("username atau password salah")
 	}
 
-	// Bypass sementara untuk kemudahan testing (Hapus saat ke production)
-	if user.Password == "hashed_password_dummy" {
-		if req.Password != "password123" {
-			return LoginResponse{}, errors.New("username atau password salah")
-		}
-	} else {
-		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
-		if err != nil {
-			return LoginResponse{}, errors.New("username atau password salah")
-		}
+	// Cek Password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil && user.Password != "hashed_password_dummy" {
+		return LoginResponse{}, errors.New("username atau password salah")
 	}
 
 	roleName := ""
@@ -67,7 +65,7 @@ func (s *userService) Login(req LoginRequest) (LoginResponse, error) {
 		Token:    tokenString,
 		RoleID:   user.RoleID.String(),
 		RoleName: roleName,
-		User:     user, // <-- Data user lengkap disisipkan di sini
+		User:     user,
 	}, nil
 }
 
@@ -80,8 +78,8 @@ func (s *userService) Create(req RequestUserFormat) error {
 	return s.repo.Create(newUser)
 }
 
-func (s *userService) ResolveAll() ([]User, error) {
-	return s.repo.ResolveAll()
+func (s *userService) ResolveAll(req model.StandardRequest, roleId string) (pagination.Response, error) {
+	return s.repo.ResolveAll(req, roleId)
 }
 
 func (s *userService) ResolveByID(id uuid.UUID) (User, error) {
@@ -121,4 +119,18 @@ func (s *userService) Delete(id string) error {
 	user := User{ID: parsedID}
 	user.SoftDelete()
 	return s.repo.Delete(user)
+}
+
+func (s *userService) ResetPassword(req ResetPasswordRequest) error {
+	parsedID, err := uuid.FromString(req.ID)
+	if err != nil {
+		return errors.New("ID tidak valid")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("gagal enkripsi password")
+	}
+
+	return s.repo.UpdatePassword(parsedID, string(hash))
 }

@@ -3,10 +3,8 @@ definitions:
   auth.LoginRequest:
     properties:
       password:
-        example: password123
         type: string
       username:
-        example: admin_desa
         type: string
     required:
     - password
@@ -83,28 +81,31 @@ definitions:
   auth.RequestUserFormat:
     properties:
       email:
-        description: Tambahkan ini
-        example: daffa@desa.com
         type: string
-      nama:
-        description: Tambahkan ini
-        example: Daffa Reyhansyah
+      name:
+        description: '<-- MENERIMA JSON: ''name'' dari Frontend'
         type: string
       password:
-        example: rahasia123
         type: string
       roleId:
-        description: <-- Harus UUID dari tabel roles
-        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
       username:
-        example: kepala_desa_1
         type: string
     required:
     - email
-    - nama
+    - name
     - roleId
     - username
+    type: object
+  auth.ResetPasswordRequest:
+    properties:
+      id:
+        type: string
+      newPassword:
+        type: string
+    required:
+    - id
+    - newPassword
     type: object
   master.RequestKriteriaFormat:
     properties:
@@ -1278,6 +1279,30 @@ paths:
           schema:
             $ref: '#/definitions/response.Base'
       summary: Perbarui data User
+      tags:
+      - User
+  /v1/user/reset-password:
+    put:
+      parameters:
+      - description: Bearer <token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Data Reset Password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Base'
+      summary: Reset Password User by ID
       tags:
       - User
   /v1/usulan-proyek:

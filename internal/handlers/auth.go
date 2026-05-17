@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv" // Ditambahkan untuk konversi string ke int
 
 	"sipropeda-backend/internal/domain/auth"
+	"sipropeda-backend/shared/model" // Ditambahkan untuk StandardRequest
 	"sipropeda-backend/transport/http/response"
 
 	"github.com/go-chi/chi"
@@ -33,6 +35,7 @@ func (h *AuthHandler) UserRouter(r chi.Router) {
 		rc.Put("/{id}", h.Update)
 		rc.Get("/{id}", h.ResolveByID)
 		rc.Delete("/{id}", h.DeleteSoft)
+		rc.Put("/reset-password", h.ResetPassword) // <-- Route Reset Password Ditambahkan
 	})
 }
 
@@ -91,7 +94,40 @@ func (h *AuthHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} response.Base
 // @Router /v1/user [get]
 func (h *AuthHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
-	data, err := h.service.ResolveAll()
+	// --- PERBAIKAN: Menangkap parameter Query untuk Pagination & Search ---
+	keyword := r.URL.Query().Get("q")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	sortBy := r.URL.Query().Get("sortBy")
+	sortType := r.URL.Query().Get("sortType")
+	roleId := r.URL.Query().Get("roleId")
+
+	if sortBy == "" {
+		sortBy = "createdAt"
+	}
+	if sortType == "" {
+		sortType = "DESC"
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize == 0 {
+		pageSize = 10 // Default page size
+	}
+
+	pageNumber, err := strconv.Atoi(pageNumberStr)
+	if err != nil || pageNumber == 0 {
+		pageNumber = 1 // Default page number
+	}
+
+	req := model.StandardRequest{
+		Keyword:    keyword,
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		SortBy:     sortBy,
+		SortType:   sortType,
+	}
+
+	data, err := h.service.ResolveAll(req, roleId)
 	if err != nil {
 		response.WithError(w, err)
 		return
@@ -161,5 +197,27 @@ func (h *AuthHandler) DeleteSoft(w http.ResponseWriter, r *http.Request) {
 		response.WithError(w, err)
 		return
 	}
-	response.WithJSON(w, http.StatusOK, map[string]string{"message": "User successfully deleted"})
+	response.WithJSON(w, http.StatusOK, map[string]interface{}{"data": true, "message": "User successfully deleted"})
+}
+
+// ResetPassword User
+// @Summary Reset Password User by ID
+// @Tags User
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Param body body auth.ResetPasswordRequest true "Data Reset Password"
+// @Success 200 {object} response.Base
+// @Router /v1/user/reset-password [put]
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req auth.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WithError(w, errors.New("invalid JSON body: "+err.Error()))
+		return
+	}
+
+	if err := h.service.ResetPassword(req); err != nil {
+		response.WithError(w, err)
+		return
+	}
+	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Password successfully reset"})
 }

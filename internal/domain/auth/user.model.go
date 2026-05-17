@@ -8,13 +8,13 @@ import (
 
 type User struct {
 	ID        uuid.UUID  `db:"id" json:"id"`
-	Nama      string     `db:"nama" json:"nama"`     // Tambahkan ini
-	Email     string     `db:"email" json:"email"`   // Tambahkan ini
+	Name      string     `db:"nama" json:"name"`     // <-- BACA DB: 'nama', KIRIM JSON: 'name'
+	Email     string     `db:"email" json:"email"`
 	Foto      *string    `db:"foto" json:"foto"`
 	Username  string     `db:"username" json:"username"`
 	Password  string     `db:"password" json:"-"`
-	RoleID    uuid.UUID  `db:"role_id" json:"roleId"` // <-- Pakai RoleID
-	RoleName  *string    `db:"role_name" json:"roleName,omitempty"` // <-- Hasil JOIN
+	RoleID    uuid.UUID  `db:"role_id" json:"roleId"`
+	RoleName  *string    `db:"role_name" json:"roleName,omitempty"`
 	CreatedAt *time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at" json:"deletedAt"`
@@ -23,11 +23,16 @@ type User struct {
 
 type RequestUserFormat struct {
 	ID       uuid.UUID `json:"id" swaggerignore:"true"`
-	Nama     string    `json:"nama" validate:"required" example:"Daffa Reyhansyah"` // Tambahkan ini
-	Email    string    `json:"email" validate:"required,email" example:"daffa@desa.com"` // Tambahkan ini
-	Username string    `json:"username" validate:"required" example:"kepala_desa_1"`
-	Password string    `json:"password" example:"rahasia123"` 
-	RoleID   uuid.UUID `json:"roleId" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"` // <-- Harus UUID dari tabel roles
+	Name     string    `json:"name" validate:"required"` // <-- MENERIMA JSON: 'name' dari Frontend
+	Email    string    `json:"email" validate:"required,email"`
+	Username string    `json:"username" validate:"required"`
+	Password string    `json:"password"` 
+	RoleID   uuid.UUID `json:"roleId" validate:"required"`
+}
+
+type ResetPasswordRequest struct {
+	ID          string `json:"id" validate:"required"`
+	NewPassword string `json:"newPassword" validate:"required"`
 }
 
 func (u *User) NewUserFormat(reqFormat RequestUserFormat, hashedPassword string) (newUser User) {
@@ -36,6 +41,8 @@ func (u *User) NewUserFormat(reqFormat RequestUserFormat, hashedPassword string)
 		newID, _ := uuid.NewV4()
 		newUser = User{
 			ID:        newID,
+			Name:      reqFormat.Name, 
+			Email:     reqFormat.Email,
 			Username:  reqFormat.Username,
 			Password:  hashedPassword,
 			RoleID:    reqFormat.RoleID,
@@ -44,6 +51,8 @@ func (u *User) NewUserFormat(reqFormat RequestUserFormat, hashedPassword string)
 	} else {
 		newUser = User{
 			ID:        reqFormat.ID,
+			Name:      reqFormat.Name,
+			Email:     reqFormat.Email,
 			Username:  reqFormat.Username,
 			Password:  hashedPassword,
 			RoleID:    reqFormat.RoleID,
@@ -61,13 +70,13 @@ func (u *User) SoftDelete() {
 }
 
 type LoginRequest struct {
-	Username string `json:"username" validate:"required" example:"admin_desa"`
-	Password string `json:"password" validate:"required" example:"password123"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginResponse struct {
 	Token    string `json:"token"`
 	RoleID   string `json:"roleId"`
 	RoleName string `json:"roleName"`
-	User     User   `json:"user"` // Tambahkan ini
+	User     User   `json:"user"`
 }
