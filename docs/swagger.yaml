@@ -217,6 +217,9 @@ definitions:
       statusSifat:
         example: Reguler
         type: string
+      statusTahapan:
+        description: <-- TAMBAHKAN BARIS INI
+        type: string
       sumberDanaId:
         example: masukkan-uuid-sumber-dana-disini
         type: string

@@ -39,6 +39,7 @@ type RequestUsulanProyek struct {
 	Satuan        string     `json:"satuan" example:"Meter"`
 	NilaiRAB      float64    `json:"nilaiRab" validate:"required" example:"45000000"`
 	StatusSifat   string     `json:"statusSifat" validate:"required" example:"Reguler"`
+	StatusTahapan string     `json:"statusTahapan"` // <-- TAMBAHKAN BARIS INI
 	SumberDanaID  *uuid.UUID `json:"sumberDanaId" example:"masukkan-uuid-sumber-dana-disini"`
 	UserID        uuid.UUID  `json:"-"` // Dari JWT
 }
@@ -71,6 +72,7 @@ func (u *UsulanProyek) NewUsulanProyekFormat(req RequestUsulanProyek) (newData U
 			Satuan:        req.Satuan,
 			NilaiRAB:      req.NilaiRAB,
 			StatusSifat:   req.StatusSifat,
+			StatusTahapan: req.StatusTahapan, // <-- TAMBAHKAN BARIS INI
 			SumberDanaID:  req.SumberDanaID,
 			UpdatedBy:     &req.UserID,
 			UpdatedAt:     &now,

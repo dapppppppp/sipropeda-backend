@@ -58,13 +58,35 @@ func (r *usulanProyekRepository) ResolveByID(id uuid.UUID) (UsulanProyek, error)
 }
 
 func (r *usulanProyekRepository) Update(data UsulanProyek) error {
-	// Status Tahapan tidak diubah di fungsi update biasa, biasanya ada endpoint approval khusus nantinya
 	query := `
 		UPDATE usulan_proyek 
-		SET tahun_anggaran = $1, nama_proyek = $2, lokasi = $3, volume = $4, satuan = $5, nilai_rab = $6, status_sifat = $7, sumber_dana_id = $8, updated_by = $9, updated_at = $10 
-		WHERE id = $11 AND is_deleted = false
+		SET tahun_anggaran = $1, 
+		    nama_proyek = $2, 
+		    lokasi = $3, 
+		    volume = $4, 
+		    satuan = $5, 
+		    nilai_rab = $6, 
+		    status_sifat = $7, 
+		    sumber_dana_id = $8, 
+		    status_tahapan = $9, 
+		    updated_by = $10, 
+		    updated_at = $11 
+		WHERE id = $12 AND is_deleted = false
 	`
-	_, err := r.db.Write.Exec(query, data.TahunAnggaran, data.NamaProyek, data.Lokasi, data.Volume, data.Satuan, data.NilaiRAB, data.StatusSifat, data.SumberDanaID, data.UpdatedBy, data.UpdatedAt, data.ID)
+	_, err := r.db.Write.Exec(query, 
+		data.TahunAnggaran, // $1
+		data.NamaProyek,    // $2
+		data.Lokasi,        // $3
+		data.Volume,        // $4
+		data.Satuan,        // $5
+		data.NilaiRAB,      // $6
+		data.StatusSifat,   // $7
+		data.SumberDanaID,  // $8
+		data.StatusTahapan, // $9 (Ini tambahan krusialnya!)
+		data.UpdatedBy,     // $10
+		data.UpdatedAt,     // $11
+		data.ID,            // $12
+	)
 	return err
 }
 

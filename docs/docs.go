@@ -2127,6 +2127,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Reguler"
                 },
+                "statusTahapan": {
+                    "description": "\u003c-- TAMBAHKAN BARIS INI",
+                    "type": "string"
+                },
                 "sumberDanaId": {
                     "type": "string",
                     "example": "masukkan-uuid-sumber-dana-disini"
