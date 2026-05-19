@@ -75,11 +75,16 @@ func (r *perankinganRepository) SaveHasilPerankingan(data []ArsipPerankingan) er
 
 func (r *perankinganRepository) GetArsip(tahun int, tahap string) ([]ArsipPerankingan, error) {
 	var data []ArsipPerankingan
+	
+	// Tambahkan u.is_deleted = false agar usulan yang sudah dihapus (soft delete) tidak muncul lagi
 	query := `
 		SELECT a.id, a.usulan_id, u.nama_proyek as usulan_name, a.nilai_preferensi_v, a.ranking, a.tahap_versi, a.created_at
 		FROM arsip_perankingan a
 		JOIN usulan_proyek u ON a.usulan_id = u.id
-		WHERE u.tahun_anggaran = $1 AND a.tahap_versi::text = $2::text
+		WHERE u.tahun_anggaran = $1 
+		  AND a.tahap_versi::text = $2::text 
+		  AND u.status_tahapan::text = $2::text 
+		  AND u.is_deleted = false
 		ORDER BY a.ranking ASC
 	`
 	err := r.db.Read.Select(&data, query, tahun, tahap)

@@ -13,6 +13,7 @@ type ArsipPerankingan struct {
 	UsulanName       *string    `db:"usulan_name" json:"usulanName,omitempty"` // Dari JOIN usulan_proyek
 	NilaiPreferensiV float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"`
 	Ranking          int        `db:"ranking" json:"ranking"`
+	StatusUsulanSaatIni string `db:"status_usulan_saat_ini" json:"statusUsulanSaatIni"`
 	TahapVersi       string     `db:"tahap_versi" json:"tahapVersi"`
 	DetailKalkulasi  *string    `db:"detail_kalkulasi" json:"detailKalkulasi"` // Disimpan sebagai JSON string
 	CreatedAt        *time.Time `db:"created_at" json:"createdAt"`
