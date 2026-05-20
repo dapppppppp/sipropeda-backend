@@ -17,7 +17,7 @@ type UsulanProyek struct {
 	NilaiRAB       float64    `db:"nilai_rab" json:"nilaiRab"`
 	StatusSifat    string     `db:"status_sifat" json:"statusSifat"`       // 'Reguler' atau 'Mandatori'
 	StatusTahapan  string     `db:"status_tahapan" json:"statusTahapan"`   // 'draft_rkp', dll
-	SumberDanaID   *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    // Pointer karena bisa null
+	SumberDanaID   *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    // Pointer karena bisa null di DB
 	SumberDanaName *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` // Hasil JOIN
 	ApprovedBy     *uuid.UUID `db:"approved_by" json:"approvedBy"`
 	ApprovedAt     *time.Time `db:"approved_at" json:"approvedAt"`
@@ -32,15 +32,16 @@ type UsulanProyek struct {
 // RequestUsulanProyek adalah format JSON untuk Create dan Update
 type RequestUsulanProyek struct {
 	ID            uuid.UUID  `json:"id" swaggerignore:"true"`
-	TahunAnggaran int        `json:"tahunAnggaran" validate:"required" example:"2025"`
+	TahunAnggaran int        `json:"tahunAnggaran" validate:"required" example:"2026"`
 	NamaProyek    string     `json:"namaProyek" validate:"required" example:"Pembangunan Gorong-Gorong"`
 	Lokasi        string     `json:"lokasi" validate:"required" example:"Dusun Sukamaju RT 01"`
 	Volume        float64    `json:"volume" example:"150.5"`
 	Satuan        string     `json:"satuan" example:"Meter"`
 	NilaiRAB      float64    `json:"nilaiRab" validate:"required" example:"45000000"`
 	StatusSifat   string     `json:"statusSifat" validate:"required" example:"Reguler"`
-	StatusTahapan string     `json:"statusTahapan"` // <-- TAMBAHKAN BARIS INI
-	SumberDanaID  *uuid.UUID `json:"sumberDanaId" example:"masukkan-uuid-sumber-dana-disini"`
+	StatusTahapan string     `json:"statusTahapan"` 
+	// 👇 PERUBAHAN: Menambahkan validate:"required" agar backend menolak jika kosong
+	SumberDanaID  *uuid.UUID `json:"sumberDanaId" validate:"required" example:"masukkan-uuid-sumber-dana"`
 	UserID        uuid.UUID  `json:"-"` // Dari JWT
 }
 
@@ -72,7 +73,7 @@ func (u *UsulanProyek) NewUsulanProyekFormat(req RequestUsulanProyek) (newData U
 			Satuan:        req.Satuan,
 			NilaiRAB:      req.NilaiRAB,
 			StatusSifat:   req.StatusSifat,
-			StatusTahapan: req.StatusTahapan, // <-- TAMBAHKAN BARIS INI
+			StatusTahapan: req.StatusTahapan, 
 			SumberDanaID:  req.SumberDanaID,
 			UpdatedBy:     &req.UserID,
 			UpdatedAt:     &now,

@@ -11,7 +11,8 @@ type PaguAnggaran struct {
 	Tahun          int        `db:"tahun" json:"tahun"`
 	SumberDanaID   uuid.UUID  `db:"sumber_dana_id" json:"sumberDanaId"`
 	SumberDanaName *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` // Hasil JOIN
-	JumlahPagu     float64    `db:"jumlah_pagu" json:"jumlahPagu"`
+	PaguEstimasi   float64    `db:"pagu_estimasi" json:"paguEstimasi"`                // Kolom Baru 1
+	PaguDefinitif  float64    `db:"pagu_definitif" json:"paguDefinitif"`              // Kolom Baru 2
 	CreatedBy      *uuid.UUID `db:"created_by" json:"createdBy"`
 	UpdatedBy      *uuid.UUID `db:"updated_by" json:"updatedBy"`
 	CreatedAt      *time.Time `db:"created_at" json:"createdAt"`
@@ -21,11 +22,12 @@ type PaguAnggaran struct {
 }
 
 type RequestPaguAnggaran struct {
-	ID           uuid.UUID `json:"id" swaggerignore:"true"`
-	Tahun        int       `json:"tahun" validate:"required" example:"2025"`
-	SumberDanaID uuid.UUID `json:"sumberDanaId" validate:"required" example:"masukkan-uuid-sumber-dana-disini"`
-	JumlahPagu   float64   `json:"jumlahPagu" validate:"required" example:"500000000"`
-	UserID       uuid.UUID `json:"-"` // Dari JWT
+	ID            uuid.UUID `json:"id" swaggerignore:"true"`
+	Tahun         int       `json:"tahun" validate:"required" example:"2026"`
+	SumberDanaID  uuid.UUID `json:"sumberDanaId" validate:"required" example:"masukkan-uuid-sumber-dana"`
+	PaguEstimasi  float64   `json:"paguEstimasi" validate:"required" example:"500000000"` // Estimasi awal (Bisa auto-fill dari frontend)
+	PaguDefinitif float64   `json:"paguDefinitif" example:"500000000"`                    // Pagu fix saat RAPBDes (Bisa 0 di awal)
+	UserID        uuid.UUID `json:"-"`                                                    // Dari JWT
 }
 
 func (p *PaguAnggaran) NewPaguAnggaranFormat(req RequestPaguAnggaran) (newData PaguAnggaran) {
@@ -33,21 +35,23 @@ func (p *PaguAnggaran) NewPaguAnggaranFormat(req RequestPaguAnggaran) (newData P
 	if req.ID == uuid.Nil {
 		newID, _ := uuid.NewV4()
 		newData = PaguAnggaran{
-			ID:           newID,
-			Tahun:        req.Tahun,
-			SumberDanaID: req.SumberDanaID,
-			JumlahPagu:   req.JumlahPagu,
-			CreatedBy:    &req.UserID,
-			CreatedAt:    &now,
+			ID:            newID,
+			Tahun:         req.Tahun,
+			SumberDanaID:  req.SumberDanaID,
+			PaguEstimasi:  req.PaguEstimasi,
+			PaguDefinitif: req.PaguDefinitif,
+			CreatedBy:     &req.UserID,
+			CreatedAt:     &now,
 		}
 	} else {
 		newData = PaguAnggaran{
-			ID:           req.ID,
-			Tahun:        req.Tahun,
-			SumberDanaID: req.SumberDanaID,
-			JumlahPagu:   req.JumlahPagu,
-			UpdatedBy:    &req.UserID,
-			UpdatedAt:    &now,
+			ID:            req.ID,
+			Tahun:         req.Tahun,
+			SumberDanaID:  req.SumberDanaID,
+			PaguEstimasi:  req.PaguEstimasi,
+			PaguDefinitif: req.PaguDefinitif,
+			UpdatedBy:     &req.UserID,
+			UpdatedAt:     &now,
 		}
 	}
 	return
