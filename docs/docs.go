@@ -2078,35 +2078,48 @@ const docTemplate = `{
         "transaction.RequestPaguAnggaran": {
             "type": "object",
             "required": [
-                "jumlahPagu",
+                "paguEstimasi",
                 "sumberDanaId",
                 "tahun"
             ],
             "properties": {
-                "jumlahPagu": {
+                "paguDefinitif": {
+                    "description": "Pagu fix saat RAPBDes (Bisa 0 di awal)",
+                    "type": "number",
+                    "example": 500000000
+                },
+                "paguEstimasi": {
+                    "description": "Estimasi awal (Bisa auto-fill dari frontend)",
                     "type": "number",
                     "example": 500000000
                 },
                 "sumberDanaId": {
                     "type": "string",
-                    "example": "masukkan-uuid-sumber-dana-disini"
+                    "example": "masukkan-uuid-sumber-dana"
                 },
                 "tahun": {
                     "type": "integer",
-                    "example": 2025
+                    "example": 2026
                 }
             }
         },
         "transaction.RequestUsulanProyek": {
             "type": "object",
             "required": [
+                "bidangId",
                 "lokasi",
                 "namaProyek",
                 "nilaiRab",
                 "statusSifat",
+                "sumberDanaId",
                 "tahunAnggaran"
             ],
             "properties": {
+                "bidangId": {
+                    "description": "Tambahan Baru",
+                    "type": "string",
+                    "example": "masukkan-uuid-bidang"
+                },
                 "lokasi": {
                     "type": "string",
                     "example": "Dusun Sukamaju RT 01"
@@ -2128,16 +2141,15 @@ const docTemplate = `{
                     "example": "Reguler"
                 },
                 "statusTahapan": {
-                    "description": "\u003c-- TAMBAHKAN BARIS INI",
                     "type": "string"
                 },
                 "sumberDanaId": {
                     "type": "string",
-                    "example": "masukkan-uuid-sumber-dana-disini"
+                    "example": "masukkan-uuid-sumber-dana"
                 },
                 "tahunAnggaran": {
                     "type": "integer",
-                    "example": 2025
+                    "example": 2026
                 },
                 "volume": {
                     "type": "number",

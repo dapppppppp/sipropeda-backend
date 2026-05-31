@@ -14,15 +14,16 @@ import (
 )
 
 type DomainHandlers struct {
-	KriteriaHandler        handlers.KriteriaHandler
-	AuthHandler            handlers.AuthHandler
-	RoleHandler            handlers.RoleHandler
-	SumberDanaHandler      handlers.SumberDanaHandler
-	PaguAnggaranHandler    handlers.PaguAnggaranHandler
-	UsulanProyekHandler    handlers.UsulanProyekHandler
-	PenilaianUsulanHandler handlers.PenilaianUsulanHandler
-	PerankinganHandler     handlers.PerankinganHandler
-	MenuHandler            handlers.MenuHandler // Pastikan ini terdaftar
+	KriteriaHandler          handlers.KriteriaHandler
+	AuthHandler              handlers.AuthHandler
+	RoleHandler              handlers.RoleHandler
+	SumberDanaHandler        handlers.SumberDanaHandler
+	BidangPembangunanHandler handlers.BidangPembangunanHandler // <-- TAMBAHAN BARU
+	PaguAnggaranHandler      handlers.PaguAnggaranHandler
+	UsulanProyekHandler      handlers.UsulanProyekHandler
+	PenilaianUsulanHandler   handlers.PenilaianUsulanHandler
+	PerankinganHandler       handlers.PerankinganHandler
+	MenuHandler              handlers.MenuHandler
 }
 
 type Router struct {
@@ -52,9 +53,8 @@ func (r *Router) SetupRoutes(mux *chi.Mux) {
 
 		// ROUTE PUBLIC / ROUTE YANG MENGATUR MIDDLEWARE SENDIRI
 		r.DomainHandlers.AuthHandler.Router(rc)
-		
-		// Daftarkan MenuHandler di sini, karena di dalam internal menu.go 
-		// sudah ada rc.Group(func(protected chi.Router) { protected.Use(middleware.JWTProtected) ... })
+
+		// Daftarkan MenuHandler di sini
 		r.DomainHandlers.MenuHandler.Router(rc)
 
 		// ROUTE PRIVATE (Dijaga oleh Satpam JWT)
@@ -65,6 +65,7 @@ func (r *Router) SetupRoutes(mux *chi.Mux) {
 			r.DomainHandlers.AuthHandler.UserRouter(protected)
 			r.DomainHandlers.RoleHandler.Router(protected)
 			r.DomainHandlers.SumberDanaHandler.Router(protected)
+			r.DomainHandlers.BidangPembangunanHandler.Router(protected) // <-- TAMBAHAN BARU
 			r.DomainHandlers.PaguAnggaranHandler.Router(protected)
 			r.DomainHandlers.UsulanProyekHandler.Router(protected)
 			r.DomainHandlers.PenilaianUsulanHandler.Router(protected)

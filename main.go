@@ -41,17 +41,22 @@ func main() {
 	kriteriaRepo := master.ProvideKriteriaRepository(dbConn)
 	kriteriaSvc := master.ProvideKriteriaService(kriteriaRepo)
 	kriteriaHdl := handlers.ProvideKriteriaHandler(kriteriaSvc)
-	
+
 	// -- Domain Master (Sumber Dana)
 	sumberDanaRepo := master.ProvideSumberDanaRepository(dbConn)
 	sumberDanaSvc := master.ProvideSumberDanaService(sumberDanaRepo)
 	sumberDanaHdl := handlers.ProvideSumberDanaHandler(sumberDanaSvc)
-	
+
+	// -- Domain Master (Bidang Pembangunan) <-- TAMBAHAN BARU
+	bidangRepo := master.ProvideBidangPembangunanRepository(dbConn)
+	bidangSvc := master.ProvideBidangPembangunanService(bidangRepo)
+	bidangHdl := handlers.ProvideBidangPembangunanHandler(bidangSvc)
+
 	// -- Domain Auth (Role)
 	roleRepo := auth.ProvideRoleRepository(dbConn)
 	roleSvc := auth.ProvideRoleService(roleRepo)
 	roleHdl := handlers.ProvideRoleHandler(roleSvc)
-	
+
 	// -- Domain Transaction (Pagu Anggaran)
 	paguAnggaranRepo := transaction.ProvidePaguAnggaranRepository(dbConn)
 	paguAnggaranSvc := transaction.ProvidePaguAnggaranService(paguAnggaranRepo)
@@ -76,22 +81,23 @@ func main() {
 	userSvc := auth.ProvideUserService(userRepo)
 	authHdl := handlers.ProvideAuthHandler(userSvc)
 
-	// -- Domain Auth (Menu) <-- Pastikan memanggil nama function yang baru
-	menuRepo := auth.ProvideMenuRepositoryPostgreSQL(dbConn) // <-- PERUBAHAN DI SINI
-	menuSvc := auth.ProvideMenuServiceImpl(menuRepo)         // <-- PERUBAHAN DI SINI
+	// -- Domain Auth (Menu) 
+	menuRepo := auth.ProvideMenuRepositoryPostgreSQL(dbConn) 
+	menuSvc := auth.ProvideMenuServiceImpl(menuRepo)        
 	menuHdl := handlers.ProvideMenuHandler(menuSvc)
 
 	// Masukkan Handler ke Router
 	domainHandlers := router.DomainHandlers{
-		KriteriaHandler:        kriteriaHdl,
-		AuthHandler:            authHdl,
-		RoleHandler:            roleHdl,
-		SumberDanaHandler:      sumberDanaHdl,
-		PaguAnggaranHandler:    paguAnggaranHdl,
-		UsulanProyekHandler:    usulanProyekHdl,
-		PenilaianUsulanHandler: penilaianHdl,
-		PerankinganHandler:     perankinganHdl,
-		MenuHandler:            menuHdl,
+		KriteriaHandler:          kriteriaHdl,
+		AuthHandler:              authHdl,
+		RoleHandler:              roleHdl,
+		SumberDanaHandler:        sumberDanaHdl,
+		BidangPembangunanHandler: bidangHdl, // <-- TAMBAHAN BARU
+		PaguAnggaranHandler:      paguAnggaranHdl,
+		UsulanProyekHandler:      usulanProyekHdl,
+		PenilaianUsulanHandler:   penilaianHdl,
+		PerankinganHandler:       perankinganHdl,
+		MenuHandler:              menuHdl,
 	}
 
 	appRouter := router.ProvideRouter(domainHandlers)

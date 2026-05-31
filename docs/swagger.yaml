@@ -186,22 +186,31 @@ definitions:
     type: object
   transaction.RequestPaguAnggaran:
     properties:
-      jumlahPagu:
+      paguDefinitif:
+        description: Pagu fix saat RAPBDes (Bisa 0 di awal)
+        example: 500000000
+        type: number
+      paguEstimasi:
+        description: Estimasi awal (Bisa auto-fill dari frontend)
         example: 500000000
         type: number
       sumberDanaId:
-        example: masukkan-uuid-sumber-dana-disini
+        example: masukkan-uuid-sumber-dana
         type: string
       tahun:
-        example: 2025
+        example: 2026
         type: integer
     required:
-    - jumlahPagu
+    - paguEstimasi
     - sumberDanaId
     - tahun
     type: object
   transaction.RequestUsulanProyek:
     properties:
+      bidangId:
+        description: Tambahan Baru
+        example: masukkan-uuid-bidang
+        type: string
       lokasi:
         example: Dusun Sukamaju RT 01
         type: string
@@ -218,22 +227,23 @@ definitions:
         example: Reguler
         type: string
       statusTahapan:
-        description: <-- TAMBAHKAN BARIS INI
         type: string
       sumberDanaId:
-        example: masukkan-uuid-sumber-dana-disini
+        example: masukkan-uuid-sumber-dana
         type: string
       tahunAnggaran:
-        example: 2025
+        example: 2026
         type: integer
       volume:
         example: 150.5
         type: number
     required:
+    - bidangId
     - lokasi
     - namaProyek
     - nilaiRab
     - statusSifat
+    - sumberDanaId
     - tahunAnggaran
     type: object
 host: localhost:8080
