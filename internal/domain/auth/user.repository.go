@@ -17,6 +17,7 @@ type UserRepository interface {
 	Update(data User) error
 	Delete(data User) error
 	UpdatePassword(id uuid.UUID, hashedPassword string) error
+	UpdateFoto(id string, fotoPath string) error // <-- Tambahkan ini
 }
 
 type userRepository struct {
@@ -29,9 +30,9 @@ func ProvideUserRepository(db *infras.PostgresqlConn) UserRepository {
 
 func (r *userRepository) GetByUsername(username string) (User, error) {
 	var user User
-	// Query menggunakan u.nama
+	// Tambahkan u.foto pada SELECT
 	query := `
-		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, r.name as role_name 
+		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, u.foto, r.name as role_name 
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.username = $1 AND u.is_deleted = false
@@ -39,7 +40,12 @@ func (r *userRepository) GetByUsername(username string) (User, error) {
 	err := r.db.Read.Get(&user, query, username)
 	return user, err
 }
-
+// UpdateFoto memperbarui path foto di tabel users
+func (r *userRepository) UpdateFoto(id string, fotoPath string) error {
+	query := `UPDATE users SET foto = $1, updated_at = NOW() WHERE id = $2 AND is_deleted = false`
+	_, err := r.db.Write.Exec(query, fotoPath, id)
+	return err
+}
 func (r *userRepository) Create(data User) error {
 	// Insert ke kolom nama
 	query := `INSERT INTO users (id, nama, email, username, password, role_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
@@ -112,9 +118,9 @@ func (r *userRepository) ResolveAll(req model.StandardRequest, roleIdFilter stri
 
 func (r *userRepository) ResolveByID(id uuid.UUID) (User, error) {
 	var data User
-	// Select u.nama
+	// Tambahkan u.foto pada SELECT
 	query := `
-		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, r.name as role_name, u.created_at, u.updated_at 
+		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, u.foto, r.name as role_name, u.created_at, u.updated_at 
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.id = $1 AND u.is_deleted = false

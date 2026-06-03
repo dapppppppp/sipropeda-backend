@@ -2,6 +2,10 @@ package auth
 
 import (
 	"errors"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"sipropeda-backend/shared/model"
@@ -22,6 +26,7 @@ type UserService interface {
 	Update(id string, req RequestUserFormat) error
 	Delete(id string) error
 	ResetPassword(req ResetPasswordRequest) error
+	UploadFoto(r *http.Request) (string, error) // <-- Tambahkan ini
 }
 
 type userService struct {
@@ -133,4 +138,56 @@ func (s *userService) ResetPassword(req ResetPasswordRequest) error {
 	}
 
 	return s.repo.UpdatePassword(parsedID, string(hash))
+}
+
+func (s *userService) UploadFoto(r *http.Request) (string, error) {
+	// 1. Batasi ukuran file (Max 2 MB sesuai frontend)
+	err := r.ParseMultipartForm(2 << 20)
+	if err != nil {
+		return "", errors.New("ukuran file terlalu besar atau format tidak valid")
+	}
+
+	// 2. Ambil ID User dari form data
+	userID := r.FormValue("id")
+	if userID == "" {
+		return "", errors.New("ID user tidak ditemukan")
+	}
+
+	// 3. Ambil file
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		return "", errors.New("file tidak ditemukan")
+	}
+	defer file.Close()
+
+	// 4. Buat direktori jika belum ada
+	uploadDir := filepath.Join("files", "profile")
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		os.MkdirAll(uploadDir, os.ModePerm)
+	}
+
+	// 5. Generate nama file baru
+	ext := filepath.Ext(handler.Filename)
+	newFileName := uuid.Must(uuid.NewV4()).String() + ext
+	savePath := filepath.Join(uploadDir, newFileName)
+
+	// 6. Simpan file ke sistem
+	dst, err := os.Create(savePath)
+	if err != nil {
+		return "", err
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		return "", err
+	}
+
+	// 7. Simpan path ke database
+	dbPath := "files/profile/" + newFileName
+	err = s.repo.UpdateFoto(userID, dbPath)
+	if err != nil {
+		return "", errors.New("gagal mengupdate foto di database")
+	}
+
+	return dbPath, nil
 }

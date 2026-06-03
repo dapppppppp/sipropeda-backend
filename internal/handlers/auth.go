@@ -36,6 +36,7 @@ func (h *AuthHandler) UserRouter(r chi.Router) {
 		rc.Get("/{id}", h.ResolveByID)
 		rc.Delete("/{id}", h.DeleteSoft)
 		rc.Put("/reset-password", h.ResetPassword) // <-- Route Reset Password Ditambahkan
+		rc.Post("/upload", h.UploadFoto) // <-- Tambahkan route ini
 	})
 }
 
@@ -220,4 +221,27 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Password successfully reset"})
+}
+
+// UploadFoto User
+// @Summary Upload Foto Profil User
+// @Tags User
+// @Accept multipart/form-data
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Param id formData string true "ID User"
+// @Param file formData file true "File Foto"
+// @Success 200 {object} response.Base
+// @Router /v1/user/upload [post]
+func (h *AuthHandler) UploadFoto(w http.ResponseWriter, r *http.Request) {
+	path, err := h.service.UploadFoto(r)
+	if err != nil {
+		response.WithError(w, err)
+		return
+	}
+	
+	response.WithJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Foto profil berhasil diupload",
+		"foto":    path,
+	})
 }
