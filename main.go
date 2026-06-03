@@ -57,6 +57,11 @@ func main() {
 	roleSvc := auth.ProvideRoleService(roleRepo)
 	roleHdl := handlers.ProvideRoleHandler(roleSvc)
 
+	// -- Domain Auth (App Config) <-- TAMBAHAN BARU
+	appConfigRepo := auth.ProvideAppConfigRepositoryPostgreSQL(dbConn)
+	appConfigSvc := auth.ProvideAppConfigService(appConfigRepo)
+	appConfigHdl := handlers.ProvideAppConfigHandler(appConfigSvc)
+
 	// -- Domain Transaction (Pagu Anggaran)
 	paguAnggaranRepo := transaction.ProvidePaguAnggaranRepository(dbConn)
 	paguAnggaranSvc := transaction.ProvidePaguAnggaranService(paguAnggaranRepo)
@@ -98,6 +103,7 @@ func main() {
 		PenilaianUsulanHandler:   penilaianHdl,
 		PerankinganHandler:       perankinganHdl,
 		MenuHandler:              menuHdl,
+		AppConfigHandler:         appConfigHdl, // <-- TAMBAHAN BARU
 	}
 
 	appRouter := router.ProvideRouter(domainHandlers)
