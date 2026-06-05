@@ -8,27 +8,31 @@ import (
 
 // UsulanProyek merepresentasikan tabel usulan_proyek di database
 type UsulanProyek struct {
-	ID             uuid.UUID  `db:"id" json:"id"`
-	TahunAnggaran  int        `db:"tahun_anggaran" json:"tahunAnggaran"`
-	BidangID       *uuid.UUID `db:"bidang_id" json:"bidangId"`                 // Tambahan Baru
-	BidangName     *string    `db:"bidang_name" json:"bidangName,omitempty"`   // Hasil JOIN
-	NamaProyek     string     `db:"nama_proyek" json:"namaProyek"`
-	Lokasi         string     `db:"lokasi" json:"lokasi"`
-	Volume         float64    `db:"volume" json:"volume"`
-	Satuan         string     `db:"satuan" json:"satuan"`
-	NilaiRAB       float64    `db:"nilai_rab" json:"nilaiRab"`
-	StatusSifat    string     `db:"status_sifat" json:"statusSifat"`       
-	StatusTahapan  string     `db:"status_tahapan" json:"statusTahapan"`   
-	SumberDanaID   *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    
-	SumberDanaName *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` 
-	ApprovedBy     *uuid.UUID `db:"approved_by" json:"approvedBy"`
-	ApprovedAt     *time.Time `db:"approved_at" json:"approvedAt"`
-	CreatedBy      *uuid.UUID `db:"created_by" json:"createdBy"`
-	UpdatedBy      *uuid.UUID `db:"updated_by" json:"updatedBy"`
-	CreatedAt      *time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt      *time.Time `db:"updated_at" json:"updatedAt"`
-	DeletedAt      *time.Time `db:"deleted_at" json:"deletedAt"`
-	IsDeleted      bool       `db:"is_deleted" json:"isDeleted"`
+	ID               uuid.UUID  `db:"id" json:"id"`
+	TahunAnggaran    int        `db:"tahun_anggaran" json:"tahunAnggaran"`
+	BidangID         *uuid.UUID `db:"bidang_id" json:"bidangId"`                 // Tambahan Baru
+	BidangName       *string    `db:"bidang_name" json:"bidangName,omitempty"`   // Hasil JOIN
+	NamaProyek       string     `db:"nama_proyek" json:"namaProyek"`
+	Lokasi           string     `db:"lokasi" json:"lokasi"`
+	Volume           float64    `db:"volume" json:"volume"`
+	Satuan           string     `db:"satuan" json:"satuan"`
+	NilaiRAB         float64    `db:"nilai_rab" json:"nilaiRab"`
+	StatusSifat      string     `db:"status_sifat" json:"statusSifat"`       
+	StatusTahapan    string     `db:"status_tahapan" json:"statusTahapan"`   
+	SumberDanaID     *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    
+	SumberDanaName   *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` 
+	
+	// TAMBAHAN BARU: Field ini menampung nilai dari tabel perankingan (hasil LEFT JOIN)
+	NilaiPreferensiV float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"` 
+
+	ApprovedBy       *uuid.UUID `db:"approved_by" json:"approvedBy"`
+	ApprovedAt       *time.Time `db:"approved_at" json:"approvedAt"`
+	CreatedBy        *uuid.UUID `db:"created_by" json:"createdBy"`
+	UpdatedBy        *uuid.UUID `db:"updated_by" json:"updatedBy"`
+	CreatedAt        *time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt        *time.Time `db:"updated_at" json:"updatedAt"`
+	DeletedAt        *time.Time `db:"deleted_at" json:"deletedAt"`
+	IsDeleted        bool       `db:"is_deleted" json:"isDeleted"`
 }
 
 // RequestUsulanProyek adalah format JSON untuk Create dan Update
