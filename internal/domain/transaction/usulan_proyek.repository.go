@@ -12,6 +12,7 @@ type UsulanProyekRepository interface {
 	ResolveByID(id uuid.UUID) (UsulanProyek, error)
 	Update(data UsulanProyek) error
 	Delete(data UsulanProyek) error
+	BulkInsert(data []UsulanProyek) error
 }
 
 type usulanProyekRepository struct {
@@ -37,7 +38,10 @@ func (r *usulanProyekRepository) ResolveAll() ([]UsulanProyek, error) {
 	query := `
         SELECT 
             u.id, u.tahun_anggaran, u.bidang_id, b.nama_bidang as bidang_name, 
-            u.nama_proyek, u.lokasi, u.volume, u.satuan, u.nilai_rab, 
+            u.nama_proyek, u.lokasi, 
+            COALESCE(u.volume, 0) as volume, 
+            COALESCE(u.satuan, '') as satuan, 
+            COALESCE(u.nilai_rab, 0) as nilai_rab, 
             u.status_sifat, u.status_tahapan, u.sumber_dana_id, s.nama_sumber as sumber_dana_name, 
             u.created_at, u.updated_at,
             COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v,
@@ -58,7 +62,10 @@ func (r *usulanProyekRepository) ResolveByID(id uuid.UUID) (UsulanProyek, error)
 	query := `
         SELECT 
             u.id, u.tahun_anggaran, u.bidang_id, b.nama_bidang as bidang_name, 
-            u.nama_proyek, u.lokasi, u.volume, u.satuan, u.nilai_rab, 
+            u.nama_proyek, u.lokasi, 
+            COALESCE(u.volume, 0) as volume, 
+            COALESCE(u.satuan, '') as satuan, 
+            COALESCE(u.nilai_rab, 0) as nilai_rab, 
             u.status_sifat, u.status_tahapan, u.sumber_dana_id, s.nama_sumber as sumber_dana_name, 
             u.created_at, u.updated_at,
             COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v,
@@ -91,19 +98,19 @@ func (r *usulanProyekRepository) Update(data UsulanProyek) error {
         WHERE id = $13 AND is_deleted = false
     `
 	_, err := r.db.Write.Exec(query, 
-		data.TahunAnggaran, // $1
-		data.BidangID,      // $2
-		data.NamaProyek,    // $3
-		data.Lokasi,        // $4
-		data.Volume,        // $5
-		data.Satuan,        // $6
-		data.NilaiRAB,      // $7
-		data.StatusSifat,   // $8
-		data.SumberDanaID,  // $9
-		data.StatusTahapan, // $10
-		data.UpdatedBy,     // $11
-		data.UpdatedAt,     // $12
-		data.ID,            // $13
+		data.TahunAnggaran,
+		data.BidangID,
+		data.NamaProyek,
+		data.Lokasi,
+		data.Volume,
+		data.Satuan,
+		data.NilaiRAB,
+		data.StatusSifat,
+		data.SumberDanaID,
+		data.StatusTahapan,
+		data.UpdatedBy,
+		data.UpdatedAt,
+		data.ID,
 	)
 	return err
 }
@@ -116,4 +123,40 @@ func (r *usulanProyekRepository) Delete(data UsulanProyek) error {
     `
 	_, err := r.db.Write.Exec(query, data.IsDeleted, data.DeletedAt, data.UpdatedBy, data.UpdatedAt, data.ID)
 	return err
+}
+
+// =================================================================================
+// BULK INSERT DENGAN AUTO-MAPPING MASTER DATA (SQL SUBQUERY)
+// =================================================================================
+func (r *usulanProyekRepository) BulkInsert(data []UsulanProyek) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.Write.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Query ini sangat cerdas. Ia menggunakan teks mentah dari Excel ($6 dan $7) 
+	// untuk mencari UUID di tabel Master secara otomatis (Case Insensitive).
+	query := `
+		INSERT INTO usulan_proyek 
+		(id, tahun_anggaran, nama_proyek, lokasi, nilai_rab, status_tahapan, status_sifat, volume, satuan, is_deleted, bidang_id, sumber_dana_id) 
+		VALUES ($1, $2, $3, $4, $5, 'RKP', 'Reguler', 0, '', false,
+			(CASE WHEN $6 = '' THEN NULL ELSE (SELECT id FROM bidang_pembangunan WHERE nama_bidang ILIKE '%' || $6 || '%' OR $6 ILIKE '%' || nama_bidang || '%' LIMIT 1) END),
+			(CASE WHEN $7 = '' THEN NULL ELSE (SELECT id FROM sumber_dana WHERE nama_sumber ILIKE '%' || $7 || '%' OR $7 ILIKE '%' || nama_sumber || '%' LIMIT 1) END)
+		)
+	`
+	for _, val := range data {
+		// val.StatusTahapan = Teks Bidang Mentah (contoh: "Bidang Penyelenggaraan Pemerintahan Desa")
+		// val.StatusSifat = Teks Sumber Dana Mentah (contoh: "DD/ADD")
+		_, err := tx.Exec(query, val.ID, val.TahunAnggaran, val.NamaProyek, val.Lokasi, val.NilaiRAB, val.StatusTahapan, val.StatusSifat)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

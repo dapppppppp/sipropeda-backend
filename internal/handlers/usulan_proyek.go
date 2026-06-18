@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv" // <-- Pastikan import strconv ditambahkan
 
 	"sipropeda-backend/internal/domain/transaction"
 	"sipropeda-backend/transport/http/middleware"
@@ -27,6 +28,7 @@ func (h *UsulanProyekHandler) Router(r chi.Router) {
 			protected.Use(middleware.JWTProtected)
 			protected.Get("/", h.ResolveAll)
 			protected.Post("/", h.Create)
+			protected.Post("/import", h.ImportExcel) // <-- Route Baru Import Excel
 			protected.Get("/{id}", h.ResolveByID)
 			protected.Put("/{id}", h.Update)
 			protected.Delete("/{id}", h.DeleteSoft)
@@ -157,4 +159,49 @@ func (h *UsulanProyekHandler) DeleteSoft(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Usulan Proyek successfully deleted"})
+}
+
+// 👇 TAMBAHAN HANDLER IMPORT EXCEL 👇
+// ImportExcel memproses unggahan file RKPDes
+// @Summary Import data Usulan Proyek dari Excel
+// @Tags Usulan Proyek
+// @Accept mpfd
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Success 201 {object} response.Base
+// @Router /v1/usulan-proyek/import [post]
+func (h *UsulanProyekHandler) ImportExcel(w http.ResponseWriter, r *http.Request) {
+	// Batasi ukuran memori multipart hingga 10MB
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		response.WithError(w, errors.New("ukuran file terlalu besar"))
+		return
+	}
+
+	tahunStr := r.FormValue("tahun_anggaran")
+	tahun, err := strconv.Atoi(tahunStr)
+	if err != nil || tahun == 0 {
+		response.WithError(w, errors.New("tahun anggaran tidak valid"))
+		return
+	}
+
+	file, _, err := r.FormFile("file_excel")
+	if err != nil {
+		response.WithError(w, errors.New("file excel wajib diunggah"))
+		return
+	}
+	defer file.Close()
+
+	jumlahData, err := h.service.ImportExcelRKP(file, tahun)
+	if err != nil {
+		response.WithError(w, err)
+		return
+	}
+
+	pesan := map[string]interface{}{
+		"message": "Berhasil mengimpor " + strconv.Itoa(jumlahData) + " usulan proyek dari file RKPDes",
+		"jumlah":  jumlahData,
+	}
+
+	response.WithJSON(w, http.StatusCreated, pesan)
 }
