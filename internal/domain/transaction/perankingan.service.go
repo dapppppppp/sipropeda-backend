@@ -23,6 +23,19 @@ func ProvidePerankinganService(repo PerankinganRepository) PerankinganService {
 }
 
 func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPerankingan, error) {
+	// =========================================================================
+	// VALIDASI: CEK USULAN YANG BELUM DINILAI (Mencegah Matriks Bolong)
+	// =========================================================================
+	belumDinilai, err := s.repo.CountUsulanBelumDinilai(req.TahunAnggaran, req.TahapVersi)
+	if err != nil {
+		return nil, errors.New("gagal melakukan pengecekan status penilaian usulan")
+	}
+	
+	if belumDinilai > 0 {
+		return nil, errors.New("GAGAL: Terdapat usulan proyek yang belum dinilai. Silakan lengkapi semua penilaian terlebih dahulu agar perhitungan akurat!")
+	}
+	// =========================================================================
+
 	// 1. Ambil Data Kriteria & Matriks
 	kriteria, err := s.repo.GetKriteriaAktif()
 	if err != nil || len(kriteria) == 0 {

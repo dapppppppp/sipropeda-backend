@@ -22,8 +22,11 @@ type UsulanProyek struct {
 	SumberDanaID     *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    
 	SumberDanaName   *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` 
 	
-	// TAMBAHAN BARU: Field ini menampung nilai dari tabel perankingan (hasil LEFT JOIN)
+	// Field ini menampung nilai dari tabel perankingan (hasil LEFT JOIN)
 	NilaiPreferensiV float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"` 
+
+	// TAMBAHAN FIELD STATUS PENILAIAN (DARI SUBQUERY EXISTS)
+	SudahDinilai     bool       `db:"sudah_dinilai" json:"sudahDinilai"`
 
 	ApprovedBy       *uuid.UUID `db:"approved_by" json:"approvedBy"`
 	ApprovedAt       *time.Time `db:"approved_at" json:"approvedAt"`

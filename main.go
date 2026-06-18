@@ -81,6 +81,11 @@ func main() {
 	penilaianSvc := transaction.ProvidePenilaianUsulanService(penilaianRepo)
 	penilaianHdl := handlers.ProvidePenilaianUsulanHandler(penilaianSvc)
 
+	// -- Domain Transaction (Dashboard) <-- INJEKSI BARU DI SINI
+	dashboardRepo := transaction.ProvideDashboardRepository(dbConn)
+	dashboardSvc := transaction.ProvideDashboardService(dashboardRepo)
+	dashboardHdl := handlers.ProvideDashboardHandler(dashboardSvc)
+
 	// -- Domain Auth (User)
 	userRepo := auth.ProvideUserRepository(dbConn)
 	userSvc := auth.ProvideUserService(userRepo)
@@ -104,6 +109,7 @@ func main() {
 		PerankinganHandler:       perankinganHdl,
 		MenuHandler:              menuHdl,
 		AppConfigHandler:         appConfigHdl, // <-- TAMBAHAN BARU
+		DashboardHandler:         dashboardHdl, // <-- INJEKSI HANDLER DASHBOARD
 	}
 
 	appRouter := router.ProvideRouter(domainHandlers)

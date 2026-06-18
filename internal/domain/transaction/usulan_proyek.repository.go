@@ -34,14 +34,14 @@ func (r *usulanProyekRepository) Create(data UsulanProyek) error {
 
 func (r *usulanProyekRepository) ResolveAll() ([]UsulanProyek, error) {
 	var data []UsulanProyek
-	// DIUBAH: Menambahkan LEFT JOIN perankingan dan mengambil p.nilai_preferensi_v
 	query := `
         SELECT 
             u.id, u.tahun_anggaran, u.bidang_id, b.nama_bidang as bidang_name, 
             u.nama_proyek, u.lokasi, u.volume, u.satuan, u.nilai_rab, 
             u.status_sifat, u.status_tahapan, u.sumber_dana_id, s.nama_sumber as sumber_dana_name, 
             u.created_at, u.updated_at,
-            COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v
+            COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v,
+            EXISTS (SELECT 1 FROM penilaian_usulan pu WHERE pu.usulan_id = u.id) as sudah_dinilai
         FROM usulan_proyek u
         LEFT JOIN sumber_dana s ON u.sumber_dana_id = s.id
         LEFT JOIN bidang_pembangunan b ON u.bidang_id = b.id
@@ -55,14 +55,14 @@ func (r *usulanProyekRepository) ResolveAll() ([]UsulanProyek, error) {
 
 func (r *usulanProyekRepository) ResolveByID(id uuid.UUID) (UsulanProyek, error) {
 	var data UsulanProyek
-	// DIUBAH: Menambahkan LEFT JOIN perankingan dan mengambil p.nilai_preferensi_v
 	query := `
         SELECT 
             u.id, u.tahun_anggaran, u.bidang_id, b.nama_bidang as bidang_name, 
             u.nama_proyek, u.lokasi, u.volume, u.satuan, u.nilai_rab, 
             u.status_sifat, u.status_tahapan, u.sumber_dana_id, s.nama_sumber as sumber_dana_name, 
             u.created_at, u.updated_at,
-            COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v
+            COALESCE(p.nilai_preferensi_v, 0) as nilai_preferensi_v,
+            EXISTS (SELECT 1 FROM penilaian_usulan pu WHERE pu.usulan_id = u.id) as sudah_dinilai
         FROM usulan_proyek u
         LEFT JOIN sumber_dana s ON u.sumber_dana_id = s.id
         LEFT JOIN bidang_pembangunan b ON u.bidang_id = b.id

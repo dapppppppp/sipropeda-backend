@@ -25,6 +25,7 @@ type DomainHandlers struct {
 	PerankinganHandler       handlers.PerankinganHandler
 	MenuHandler              handlers.MenuHandler
 	AppConfigHandler         handlers.AppConfigHandler
+	DashboardHandler         handlers.DashboardHandler // <-- TAMBAHAN BARU
 }
 
 type Router struct {
@@ -82,6 +83,7 @@ func (r *Router) SetupRoutes(mux *chi.Mux) {
 			r.DomainHandlers.UsulanProyekHandler.Router(protected)
 			r.DomainHandlers.PenilaianUsulanHandler.Router(protected)
 			r.DomainHandlers.PerankinganHandler.Router(protected)
+			r.DomainHandlers.DashboardHandler.Router(protected) // <-- TAMBAHAN ROUTE DASHBOARD
 			
 			// AppConfigHandler SUDAH DIHAPUS DARI SINI
 		})

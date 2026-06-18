@@ -11,6 +11,9 @@ type PerankinganRepository interface {
 	GetMatriksPenilaian(tahun int, tahap string) ([]MatriksPenilaian, error)
 	SaveHasilPerankingan(data []ArsipPerankingan) error
 	GetArsip(tahun int, tahap string) ([]ArsipPerankingan, error)
+	
+	// TAMBAHAN: Fungsi untuk mengecek usulan yang belum dinilai
+	CountUsulanBelumDinilai(tahun int, tahap string) (int, error)
 }
 
 type perankinganRepository struct {
@@ -89,4 +92,17 @@ func (r *perankinganRepository) GetArsip(tahun int, tahap string) ([]ArsipPerank
 	`
 	err := r.db.Read.Select(&data, query, tahun, tahap)
 	return data, err
+}
+
+// TAMBAHAN: Implementasi query pengecekan usulan yang belum dinilai
+func (r *perankinganRepository) CountUsulanBelumDinilai(tahun int, tahap string) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(id) 
+		FROM usulan_proyek 
+		WHERE tahun_anggaran = $1 AND status_tahapan::text = $2::text AND is_deleted = false
+		AND NOT EXISTS (SELECT 1 FROM penilaian_usulan pu WHERE pu.usulan_id = usulan_proyek.id)
+	`
+	err := r.db.Read.Get(&count, query, tahun, tahap)
+	return count, err
 }
