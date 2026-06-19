@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"sipropeda-backend/internal/domain/master"
+	"sipropeda-backend/shared/model"
 	"sipropeda-backend/transport/http/middleware"
 	"sipropeda-backend/transport/http/response"
 
@@ -26,6 +28,7 @@ func (h *SumberDanaHandler) Router(r chi.Router) {
 		rc.Group(func(protected chi.Router) {
 			protected.Use(middleware.JWTProtected)
 			protected.Get("/", h.ResolveAll)
+			protected.Get("/page", h.ResolvePaging) // 👇 Endpoint Baru khusus tabel terpaginasi
 			protected.Post("/", h.Create)
 			protected.Get("/{id}", h.ResolveByID)
 			protected.Put("/{id}", h.Update)
@@ -66,6 +69,58 @@ func (h *SumberDanaHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Router /v1/sumber-dana [get]
 func (h *SumberDanaHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
 	data, err := h.service.ResolveAll()
+	if err != nil {
+		response.WithError(w, err)
+		return
+	}
+	response.WithJSON(w, http.StatusOK, data)
+}
+
+// ResolvePaging mengambil data Sumber Dana terpaginasi
+// @Summary Ambil data Sumber Dana Terpaginasi
+// @Tags Sumber Dana
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Param q query string false "Kata kunci pencarian"
+// @Param pageSize query int false "Jumlah data per halaman"
+// @Param pageNumber query int false "Nomor halaman yang diambil"
+// @Param sortBy query string false "Parameter pengurutan"
+// @Param sortType query string false "Tipe pengurutan [asc | desc]"
+// @Success 200 {object} response.Base
+// @Router /v1/sumber-dana/page [get]
+func (h *SumberDanaHandler) ResolvePaging(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("q")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	sortBy := r.URL.Query().Get("sortBy")
+	sortType := r.URL.Query().Get("sortType")
+
+	if sortBy == "" {
+		sortBy = "createdAt"
+	}
+	if sortType == "" {
+		sortType = "desc"
+	}
+
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	pageNumber, _ := strconv.Atoi(pageNumberStr)
+	if pageNumber <= 0 {
+		pageNumber = 1
+	}
+
+	req := model.StandardRequest{
+		Keyword:    keyword,
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		SortBy:     sortBy,
+		SortType:   sortType,
+	}
+
+	data, err := h.service.ResolvePaging(req)
 	if err != nil {
 		response.WithError(w, err)
 		return

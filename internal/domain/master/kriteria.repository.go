@@ -1,14 +1,18 @@
 package master
 
 import (
+	"bytes"
 	"sipropeda-backend/infras"
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
 
 	"github.com/gofrs/uuid"
 )
 
 type KriteriaRepository interface {
 	Create(data Kriteria) error
-	ResolveAll() ([]Kriteria, error)
+	ResolveAll() ([]Kriteria, error) // Tetap ada untuk drop-down dan kalkulasi bobot
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error) // Endpoint Pagination
 	ResolveByID(id uuid.UUID) (Kriteria, error)
 	Update(data Kriteria) error
 	Delete(data Kriteria) error
@@ -36,6 +40,72 @@ func (r *kriteriaRepository) ResolveAll() ([]Kriteria, error) {
 	query := `SELECT * FROM m_kriteria WHERE is_deleted = false ORDER BY kode ASC`
 	err := r.db.Read.Select(&data, query)
 	return data, err
+}
+
+func (r *kriteriaRepository) ResolvePaging(req model.StandardRequest) (data pagination.Response, err error) {
+	var searchParams []interface{}
+	var filterBuff bytes.Buffer
+
+	filterBuff.WriteString(" WHERE is_deleted = false")
+
+	if req.Keyword != "" {
+		filterBuff.WriteString(" AND (nama ILIKE ? OR kode ILIKE ?) ")
+		searchParams = append(searchParams, "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+	}
+
+	selectDto := `SELECT * FROM m_kriteria`
+
+	// 1. Hitung Total Data
+	countQuery := r.db.Read.Rebind("SELECT count(*) FROM (" + selectDto + filterBuff.String() + ")x")
+	var totalData int
+	err = r.db.Read.QueryRowx(countQuery, searchParams...).Scan(&totalData)
+	if err != nil {
+		return
+	}
+
+	if totalData < 1 {
+		data.Items = []Kriteria{}
+		data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+		return data, nil
+	}
+
+	// 2. Sorting Dinamis
+	orderByColumn, ok := ColumnMapKriteria[req.SortBy].(string)
+	if !ok {
+		orderByColumn = "kode" // Default sort by Kode C1, C2
+	}
+	
+	sortType := req.SortType
+	if sortType == "" {
+		sortType = "asc"
+	}
+	filterBuff.WriteString(" ORDER BY " + orderByColumn + " " + sortType)
+
+	// 3. Limit Offset
+	offset := (req.PageNumber - 1) * req.PageSize
+	filterBuff.WriteString(" LIMIT ? OFFSET ? ")
+	searchParams = append(searchParams, req.PageSize, offset)
+
+	searchQuery := r.db.Read.Rebind(selectDto + filterBuff.String())
+	rows, err := r.db.Read.Queryx(searchQuery, searchParams...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var items []Kriteria
+	for rows.Next() {
+		var item Kriteria
+		err = rows.StructScan(&item)
+		if err != nil {
+			return
+		}
+		items = append(items, item)
+	}
+
+	data.Items = items
+	data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+	return data, nil
 }
 
 func (r *kriteriaRepository) ResolveByID(id uuid.UUID) (Kriteria, error) {

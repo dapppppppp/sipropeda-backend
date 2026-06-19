@@ -1,10 +1,15 @@
 package transaction
 
-import "github.com/gofrs/uuid"
+import (
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
+	"github.com/gofrs/uuid"
+)
 
 type PaguAnggaranService interface {
 	Create(req RequestPaguAnggaran) error
-	ResolveAll() ([]PaguAnggaran, error)
+	ResolveAll(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (PaguAnggaran, error)
 	Update(id string, req RequestPaguAnggaran) error
 	Delete(id string, userID uuid.UUID) error
@@ -23,8 +28,8 @@ func (s *paguAnggaranService) Create(req RequestPaguAnggaran) error {
 	return s.repo.Create(newData)
 }
 
-func (s *paguAnggaranService) ResolveAll() ([]PaguAnggaran, error) {
-	return s.repo.ResolveAll()
+func (s *paguAnggaranService) ResolveAll(req model.StandardRequest) (pagination.Response, error) {
+	return s.repo.ResolveAll(req)
 }
 
 func (s *paguAnggaranService) ResolveByID(id uuid.UUID) (PaguAnggaran, error) {

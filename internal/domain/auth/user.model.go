@@ -35,6 +35,26 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword" validate:"required"`
 }
 
+type LoginRequest struct {
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LoginResponse struct {
+	Token    string `json:"token"`
+	RoleID   string `json:"roleId"`
+	RoleName string `json:"roleName"`
+	User     User   `json:"user"`
+}
+
+// ColumnMapUser untuk mapping sorting dinamis dari FE ke SQL
+var ColumnMapUser = map[string]interface{}{
+	"name":      "u.nama",
+	"email":     "u.email",
+	"role":      "r.name",
+	"createdAt": "u.created_at",
+}
+
 func (u *User) NewUserFormat(reqFormat RequestUserFormat, hashedPassword string) (newUser User) {
 	now := time.Now()
 	if reqFormat.ID == uuid.Nil {
@@ -67,16 +87,4 @@ func (u *User) SoftDelete() {
 	u.IsDeleted = true
 	u.UpdatedAt = &now
 	u.DeletedAt = &now
-}
-
-type LoginRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
-}
-
-type LoginResponse struct {
-	Token    string `json:"token"`
-	RoleID   string `json:"roleId"`
-	RoleName string `json:"roleName"`
-	User     User   `json:"user"`
 }

@@ -1,14 +1,17 @@
 package transaction
 
 import (
+	"bytes"
 	"sipropeda-backend/infras"
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
 
 	"github.com/gofrs/uuid"
 )
 
 type PaguAnggaranRepository interface {
 	Create(data PaguAnggaran) error
-	ResolveAll() ([]PaguAnggaran, error)
+	ResolveAll(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (PaguAnggaran, error)
 	Update(data PaguAnggaran) error
 	Delete(data PaguAnggaran) error
@@ -31,17 +34,71 @@ func (r *paguAnggaranRepository) Create(data PaguAnggaran) error {
 	return err
 }
 
-func (r *paguAnggaranRepository) ResolveAll() ([]PaguAnggaran, error) {
-	var data []PaguAnggaran
-	query := `
+func (r *paguAnggaranRepository) ResolveAll(req model.StandardRequest) (data pagination.Response, err error) {
+	var searchParams []interface{}
+	var filterBuff bytes.Buffer
+
+	filterBuff.WriteString(" WHERE coalesce(p.is_deleted, false) = false")
+
+	// Filter Pencarian
+	if req.Keyword != "" {
+		filterBuff.WriteString(" AND ")
+		filterBuff.WriteString(" concat(p.tahun::text, s.nama_sumber) ilike ? ")
+		searchParams = append(searchParams, "%"+req.Keyword+"%")
+	}
+
+	selectDto := `
 		SELECT p.id, p.tahun, p.sumber_dana_id, s.nama_sumber as sumber_dana_name, p.pagu_estimasi, p.pagu_definitif, p.created_at 
 		FROM pagu_anggaran p
 		LEFT JOIN sumber_dana s ON p.sumber_dana_id = s.id
-		WHERE p.is_deleted = false 
-		ORDER BY p.tahun DESC, p.created_at DESC
 	`
-	err := r.db.Read.Select(&data, query)
-	return data, err
+
+	// 1. Hitung Total
+	countQuery := r.db.Read.Rebind("SELECT count(*) FROM (" + selectDto + filterBuff.String() + ")x")
+	var totalData int
+	err = r.db.Read.QueryRowx(countQuery, searchParams...).Scan(&totalData)
+	if err != nil {
+		return
+	}
+
+	if totalData < 1 {
+		data.Items = []PaguAnggaran{}
+		data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+		return data, nil
+	}
+
+	// 2. Sorting
+	orderByColumn, ok := ColumnMapPaguAnggaran[req.SortBy].(string)
+	if !ok {
+		orderByColumn = "p.created_at"
+	}
+	filterBuff.WriteString(" ORDER BY " + orderByColumn + " " + req.SortType)
+
+	// 3. Limit Offset Pagination
+	offset := (req.PageNumber - 1) * req.PageSize
+	filterBuff.WriteString(" LIMIT ? OFFSET ? ")
+	searchParams = append(searchParams, req.PageSize, offset)
+
+	searchQuery := r.db.Read.Rebind(selectDto + filterBuff.String())
+	rows, err := r.db.Read.Queryx(searchQuery, searchParams...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var items []PaguAnggaran
+	for rows.Next() {
+		var item PaguAnggaran
+		err = rows.StructScan(&item)
+		if err != nil {
+			return
+		}
+		items = append(items, item)
+	}
+
+	data.Items = items
+	data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+	return data, nil
 }
 
 func (r *paguAnggaranRepository) ResolveByID(id uuid.UUID) (PaguAnggaran, error) {

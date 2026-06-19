@@ -3,6 +3,8 @@ package transaction
 import (
 	"errors"
 	"mime/multipart"
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
 	"strconv"
 	"strings"
 
@@ -12,11 +14,12 @@ import (
 
 type UsulanProyekService interface {
 	Create(req RequestUsulanProyek) error
-	ResolveAll() ([]UsulanProyek, error)
+	ResolveAll(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (UsulanProyek, error)
 	Update(id string, req RequestUsulanProyek) error
 	Delete(id string, userID uuid.UUID) error
 	ImportExcelRKP(file multipart.File, tahunAnggaran int) (int, error)
+	GetAllData() ([]UsulanProyek, error) // Tambahkan ini di interface
 }
 
 type usulanProyekService struct {
@@ -32,8 +35,8 @@ func (s *usulanProyekService) Create(req RequestUsulanProyek) error {
 	return s.repo.Create(newData)
 }
 
-func (s *usulanProyekService) ResolveAll() ([]UsulanProyek, error) {
-	return s.repo.ResolveAll()
+func (s *usulanProyekService) ResolveAll(req model.StandardRequest) (pagination.Response, error) {
+	return s.repo.ResolveAll(req)
 }
 
 func (s *usulanProyekService) ResolveByID(id uuid.UUID) (UsulanProyek, error) {
@@ -45,10 +48,13 @@ func (s *usulanProyekService) Update(id string, req RequestUsulanProyek) error {
 	if err != nil {
 		return err
 	}
-
 	req.ID = parsedID
 	updatedData := (&UsulanProyek{}).NewUsulanProyekFormat(req)
 	return s.repo.Update(updatedData)
+}
+
+func (s *usulanProyekService) GetAllData() ([]UsulanProyek, error) {
+	return s.repo.GetAllData()
 }
 
 func (s *usulanProyekService) Delete(id string, userID uuid.UUID) error {
@@ -56,15 +62,11 @@ func (s *usulanProyekService) Delete(id string, userID uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-
 	data := UsulanProyek{ID: parsedID}
 	data.SoftDelete(userID)
 	return s.repo.Delete(data)
 }
 
-// =================================================================================
-// FUZZY COLUMN EXTRACTOR + AUTO MAPPING (SANGAT CERDAS)
-// =================================================================================
 func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran int) (int, error) {
 	f, err := excelize.OpenReader(file)
 	if err != nil {
@@ -89,14 +91,12 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 	}
 
 	var dataImport []UsulanProyek
-	currentBidang := "" // Stateful Tracker untuk merekam "Bidang"
+	currentBidang := ""
 
 	for i, row := range rows {
 		if i < 4 {
 			continue
 		}
-
-		// A. DETEKSI BIDANG (Membaca baris judul Bidang dan menyimpannya di memori)
 		for colIdx := 0; colIdx <= 2; colIdx++ {
 			if colIdx < len(row) {
 				val := strings.TrimSpace(row[colIdx])
@@ -112,7 +112,6 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 		var nilaiRab float64 = 0
 		sumberDana := ""
 
-		// B. MENCARI NAMA PROYEK
 		for colIdx := 2; colIdx <= 6; colIdx++ {
 			if colIdx < len(row) {
 				val := strings.TrimSpace(row[colIdx])
@@ -127,10 +126,9 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 		}
 
 		if namaProyek == "" || strings.Contains(strings.ToLower(namaProyek), "bidang") {
-			continue // Skip jika ini hanya baris judul bidang
+			continue
 		}
 
-		// C. MENCARI LOKASI
 		for colIdx := 4; colIdx <= 10; colIdx++ {
 			if colIdx < len(row) {
 				val := strings.TrimSpace(row[colIdx])
@@ -142,7 +140,6 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 			}
 		}
 
-		// D. MENCARI SUMBER DANA (Cari di 6 kolom paling kanan)
 		for colIdx := len(row) - 1; colIdx >= len(row)-6 && colIdx >= 0; colIdx-- {
 			val := strings.TrimSpace(row[colIdx])
 			valLower := strings.ToLower(val)
@@ -152,7 +149,6 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 			}
 		}
 
-		// E. MENCARI RAB
 		for _, val := range row {
 			valClean := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(val), "Rp", ""), ".", ""), ",", "")
 			if rab, err := strconv.ParseFloat(strings.TrimSpace(valClean), 64); err == nil {
@@ -169,12 +165,9 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 			Lokasi:        lokasi,
 			NilaiRAB:      nilaiRab,
 			TahunAnggaran: tahunAnggaran,
-			// TRIK CERDAS: Kita titipkan teks mentah Bidang & Sumber Dana ke properti string ini sementara, 
-			// untuk nanti diolah oleh SQL Database menjadi UUID asli!
 			StatusTahapan: currentBidang, 
 			StatusSifat:   sumberDana,    
 		}
-		
 		dataImport = append(dataImport, usulan)
 	}
 
@@ -186,6 +179,5 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 	if err != nil {
 		return 0, err
 	}
-
 	return len(dataImport), nil
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"sipropeda-backend/internal/domain/transaction"
+	"sipropeda-backend/shared/model"
 	"sipropeda-backend/transport/http/middleware"
 	"sipropeda-backend/transport/http/response"
 
@@ -31,16 +32,6 @@ func (h *PerankinganHandler) Router(r chi.Router) {
 	})
 }
 
-// HitungTOPSIS mengeksekusi algoritma dan menyimpan ranking
-// @Summary Kalkulasi Ranking TOPSIS
-// @Description Endpoint untuk menghitung perangkingan menggunakan metode TOPSIS berdasarkan tahun dan tahap
-// @Tags Perankingan
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer <token>"
-// @Param body body transaction.RequestHitungTopsis true "Parameter Perhitungan"
-// @Success 200 {object} response.Base
-// @Router /v1/perankingan/hitung [post]
 func (h *PerankinganHandler) HitungTOPSIS(w http.ResponseWriter, r *http.Request) {
 	var req transaction.RequestHitungTopsis
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -59,15 +50,7 @@ func (h *PerankinganHandler) HitungTOPSIS(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// GetArsip mengambil hasil ranking yang sudah tersimpan
-// @Summary Ambil Arsip Perankingan
-// @Tags Perankingan
-// @Produce json
-// @Param Authorization header string true "Bearer <token>"
-// @Param tahun query int true "Tahun Anggaran"
-// @Param tahap query string true "Tahapan (misal: RKP)"
-// @Success 200 {object} response.Base
-// @Router /v1/perankingan/arsip [get]
+// Menangkap param filter dan pagination
 func (h *PerankinganHandler) GetArsip(w http.ResponseWriter, r *http.Request) {
 	tahunStr := r.URL.Query().Get("tahun")
 	tahap := r.URL.Query().Get("tahap")
@@ -78,7 +61,39 @@ func (h *PerankinganHandler) GetArsip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := h.service.GetArsip(tahun, tahap)
+	keyword := r.URL.Query().Get("q")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	sortBy := r.URL.Query().Get("sortBy")
+	sortType := r.URL.Query().Get("sortType")
+
+	// Default Value jika kosong
+	if sortBy == "" {
+		sortBy = "ranking"
+	}
+	if sortType == "" {
+		sortType = "asc"
+	}
+
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	pageNumber, _ := strconv.Atoi(pageNumberStr)
+	if pageNumber <= 0 {
+		pageNumber = 1
+	}
+
+	req := model.StandardRequest{
+		Keyword:    keyword,
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		SortBy:     sortBy,
+		SortType:   sortType,
+	}
+
+	data, err := h.service.GetArsip(req, tahun, tahap)
 	if err != nil {
 		response.WithError(w, err)
 		return

@@ -10,8 +10,8 @@ import (
 type UsulanProyek struct {
 	ID               uuid.UUID  `db:"id" json:"id"`
 	TahunAnggaran    int        `db:"tahun_anggaran" json:"tahunAnggaran"`
-	BidangID         *uuid.UUID `db:"bidang_id" json:"bidangId"`                 // Tambahan Baru
-	BidangName       *string    `db:"bidang_name" json:"bidangName,omitempty"`   // Hasil JOIN
+	BidangID         *uuid.UUID `db:"bidang_id" json:"bidangId"`
+	BidangName       *string    `db:"bidang_name" json:"bidangName,omitempty"`
 	NamaProyek       string     `db:"nama_proyek" json:"namaProyek"`
 	Lokasi           string     `db:"lokasi" json:"lokasi"`
 	Volume           float64    `db:"volume" json:"volume"`
@@ -21,13 +21,8 @@ type UsulanProyek struct {
 	StatusTahapan    string     `db:"status_tahapan" json:"statusTahapan"`   
 	SumberDanaID     *uuid.UUID `db:"sumber_dana_id" json:"sumberDanaId"`    
 	SumberDanaName   *string    `db:"sumber_dana_name" json:"sumberDanaName,omitempty"` 
-	
-	// Field ini menampung nilai dari tabel perankingan (hasil LEFT JOIN)
 	NilaiPreferensiV float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"` 
-
-	// TAMBAHAN FIELD STATUS PENILAIAN (DARI SUBQUERY EXISTS)
 	SudahDinilai     bool       `db:"sudah_dinilai" json:"sudahDinilai"`
-
 	ApprovedBy       *uuid.UUID `db:"approved_by" json:"approvedBy"`
 	ApprovedAt       *time.Time `db:"approved_at" json:"approvedAt"`
 	CreatedBy        *uuid.UUID `db:"created_by" json:"createdBy"`
@@ -42,7 +37,7 @@ type UsulanProyek struct {
 type RequestUsulanProyek struct {
 	ID            uuid.UUID  `json:"id" swaggerignore:"true"`
 	TahunAnggaran int        `json:"tahunAnggaran" validate:"required" example:"2026"`
-	BidangID      *uuid.UUID `json:"bidangId" validate:"required" example:"masukkan-uuid-bidang"` // Tambahan Baru
+	BidangID      *uuid.UUID `json:"bidangId" validate:"required" example:"masukkan-uuid-bidang"`
 	NamaProyek    string     `json:"namaProyek" validate:"required" example:"Pembangunan Gorong-Gorong"`
 	Lokasi        string     `json:"lokasi" validate:"required" example:"Dusun Sukamaju RT 01"`
 	Volume        float64    `json:"volume" example:"150.5"`
@@ -51,7 +46,20 @@ type RequestUsulanProyek struct {
 	StatusSifat   string     `json:"statusSifat" validate:"required" example:"Reguler"`
 	StatusTahapan string     `json:"statusTahapan"` 
 	SumberDanaID  *uuid.UUID `json:"sumberDanaId" validate:"required" example:"masukkan-uuid-sumber-dana"`
-	UserID        uuid.UUID  `json:"-"` // Dari JWT
+	UserID        uuid.UUID  `json:"-"`
+}
+
+// Alias dari JSON ke DB untuk keamanan sorting di server (Sama seperti Pegawai)
+var ColumnMapUsulanProyek = map[string]interface{}{
+	"id":               "u.id",
+	"tahunAnggaran":    "u.tahun_anggaran",
+	"namaProyek":       "u.nama_proyek",
+	"lokasi":           "u.lokasi",
+	"nilaiRab":         "u.nilai_rab",
+	"statusSifat":      "u.status_sifat",
+	"statusTahapan":    "u.status_tahapan",
+	"nilaiPreferensiV": "p.nilai_preferensi_v",
+	"createdAt":        "u.created_at",
 }
 
 func (u *UsulanProyek) NewUsulanProyekFormat(req RequestUsulanProyek) (newData UsulanProyek) {
@@ -68,7 +76,7 @@ func (u *UsulanProyek) NewUsulanProyekFormat(req RequestUsulanProyek) (newData U
 			Satuan:        req.Satuan,
 			NilaiRAB:      req.NilaiRAB,
 			StatusSifat:   req.StatusSifat,
-			StatusTahapan: "RKP", // Default awal
+			StatusTahapan: "RKP",
 			SumberDanaID:  req.SumberDanaID,
 			CreatedBy:     &req.UserID,
 			CreatedAt:     &now,

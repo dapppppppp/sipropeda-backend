@@ -1,10 +1,16 @@
 package master
 
-import "github.com/gofrs/uuid"
+import (
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
+	"github.com/gofrs/uuid"
+)
 
 type BidangPembangunanService interface {
 	Create(req RequestBidangPembangunan) error
 	ResolveAll() ([]BidangPembangunan, error)
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (BidangPembangunan, error)
 	Update(id string, req RequestBidangPembangunan) error
 	Delete(id string, userID uuid.UUID) error
@@ -25,6 +31,10 @@ func (s *bidangPembangunanService) Create(req RequestBidangPembangunan) error {
 
 func (s *bidangPembangunanService) ResolveAll() ([]BidangPembangunan, error) {
 	return s.repo.ResolveAll()
+}
+
+func (s *bidangPembangunanService) ResolvePaging(req model.StandardRequest) (pagination.Response, error) {
+	return s.repo.ResolvePaging(req)
 }
 
 func (s *bidangPembangunanService) ResolveByID(id uuid.UUID) (BidangPembangunan, error) {

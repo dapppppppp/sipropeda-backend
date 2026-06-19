@@ -25,6 +25,12 @@ type RequestBidangPembangunan struct {
 	UserID     uuid.UUID `json:"-"` // Dari JWT
 }
 
+// ColumnMapBidangPembangunan untuk mapping sorting dari FE ke SQL
+var ColumnMapBidangPembangunan = map[string]interface{}{
+	"namaBidang": "nama_bidang",
+	"createdAt":  "created_at",
+}
+
 func (b *BidangPembangunan) NewBidangPembangunanFormat(req RequestBidangPembangunan) (newData BidangPembangunan) {
 	now := time.Now()
 	if req.ID == uuid.Nil {

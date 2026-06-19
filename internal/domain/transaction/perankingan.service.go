@@ -6,12 +6,16 @@ import (
 	"math"
 	"sort"
 
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
 	"github.com/gofrs/uuid"
 )
 
 type PerankinganService interface {
 	HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPerankingan, error)
-	GetArsip(tahun int, tahap string) ([]ArsipPerankingan, error)
+	// Interface diperbarui
+	GetArsip(req model.StandardRequest, tahun int, tahap string) (pagination.Response, error)
 }
 
 type perankinganService struct {
@@ -23,9 +27,6 @@ func ProvidePerankinganService(repo PerankinganRepository) PerankinganService {
 }
 
 func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPerankingan, error) {
-	// =========================================================================
-	// VALIDASI: CEK USULAN YANG BELUM DINILAI (Mencegah Matriks Bolong)
-	// =========================================================================
 	belumDinilai, err := s.repo.CountUsulanBelumDinilai(req.TahunAnggaran, req.TahapVersi)
 	if err != nil {
 		return nil, errors.New("gagal melakukan pengecekan status penilaian usulan")
@@ -34,9 +35,7 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 	if belumDinilai > 0 {
 		return nil, errors.New("GAGAL: Terdapat usulan proyek yang belum dinilai. Silakan lengkapi semua penilaian terlebih dahulu agar perhitungan akurat!")
 	}
-	// =========================================================================
 
-	// 1. Ambil Data Kriteria & Matriks
 	kriteria, err := s.repo.GetKriteriaAktif()
 	if err != nil || len(kriteria) == 0 {
 		return nil, errors.New("data kriteria tidak ditemukan")
@@ -47,7 +46,6 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		return nil, errors.New("data usulan atau penilaian belum diisi untuk tahap ini")
 	}
 
-	// Mengelompokkan matriks berdasarkan UsulanID -> KriteriaID -> Nilai
 	mapNilai := make(map[string]map[string]float64)
 	for _, m := range matriksMentah {
 		uID := m.UsulanID.String()
@@ -58,7 +56,6 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		mapNilai[uID][kID] = m.NilaiInput
 	}
 
-	// 2. Cari Pembagi (Akar Kuadrat dari Total Kuadrat per Kriteria)
 	pembagi := make(map[string]float64)
 	for _, k := range kriteria {
 		kID := k.ID.String()
@@ -70,8 +67,7 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		pembagi[kID] = math.Sqrt(totalKuadrat)
 	}
 
-	// 3. Matriks Keputusan Ternormalisasi Terbobot (Y)
-	matriksY := make(map[string]map[string]float64) // [UsulanID][KriteriaID]
+	matriksY := make(map[string]map[string]float64)
 	for uID, nilaiUsulan := range mapNilai {
 		matriksY[uID] = make(map[string]float64)
 		for _, k := range kriteria {
@@ -84,7 +80,6 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		}
 	}
 
-	// 4. Tentukan Solusi Ideal Positif (A+) dan Negatif (A-)
 	idealPositif := make(map[string]float64)
 	idealNegatif := make(map[string]float64)
 
@@ -113,7 +108,6 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		}
 	}
 
-	// 5 & 6. Hitung Jarak (D+, D-) dan Nilai Preferensi (V)
 	var hasilAkhir []ArsipPerankingan
 	for uID, yVal := range matriksY {
 		var totalDPlus, totalDMin float64
@@ -133,7 +127,6 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 			nilaiV = dMin / (dPlus + dMin)
 		}
 
-		// Simpan detail kalkulasi ke JSON untuk transparansi (bisa buat lampiran skripsi)
 		detail := map[string]interface{}{
 			"d_plus": dPlus,
 			"d_min":  dMin,
@@ -151,17 +144,14 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 		})
 	}
 
-	// 7. Proses Perankingan (Sort by V Descending)
 	sort.Slice(hasilAkhir, func(i, j int) bool {
 		return hasilAkhir[i].NilaiPreferensiV > hasilAkhir[j].NilaiPreferensiV
 	})
 
-	// Beri nomor ranking
 	for i := range hasilAkhir {
 		hasilAkhir[i].Ranking = i + 1
 	}
 
-	// 8. Simpan ke Database
 	err = s.repo.SaveHasilPerankingan(hasilAkhir)
 	if err != nil {
 		return nil, err
@@ -170,6 +160,7 @@ func (s *perankinganService) HitungTOPSIS(req RequestHitungTopsis) ([]ArsipPeran
 	return hasilAkhir, nil
 }
 
-func (s *perankinganService) GetArsip(tahun int, tahap string) ([]ArsipPerankingan, error) {
-	return s.repo.GetArsip(tahun, tahap)
+// Diperbarui agar memanggil fungsi pagination dari repo
+func (s *perankinganService) GetArsip(req model.StandardRequest, tahun int, tahap string) (pagination.Response, error) {
+	return s.repo.GetArsip(req, tahun, tahap)
 }
