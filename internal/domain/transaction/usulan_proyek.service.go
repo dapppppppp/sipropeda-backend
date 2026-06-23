@@ -97,6 +97,14 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 		if i < 4 {
 			continue
 		}
+
+		nonEmptyCols := 0
+		for _, col := range row {
+			if strings.TrimSpace(col) != "" {
+				nonEmptyCols++
+			}
+		}
+
 		for colIdx := 0; colIdx <= 2; colIdx++ {
 			if colIdx < len(row) {
 				val := strings.TrimSpace(row[colIdx])
@@ -105,6 +113,12 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 					break
 				}
 			}
+		}
+
+		// Baris proyek yang valid biasanya memiliki setidaknya 3 kolom terisi (No, Kegiatan, RAB/Lokasi)
+		// Jika kurang dari 3, kemungkinan besar itu adalah judul, nama daerah, atau tanda tangan.
+		if nonEmptyCols < 3 {
+			continue
 		}
 
 		namaProyek := ""
@@ -119,6 +133,36 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 				if strings.Contains(valLower, "jenis kegiatan") || strings.Contains(valLower, "usulan") {
 					continue
 				}
+
+				// Filter kata-kata yang bukan usulan proyek (misal: header, nama desa, dll)
+				isInvalid := false
+				invalidPrefixes := []string{
+					"pemerintah", "lampiran", "rencana kerja", "rkp", "tahun anggaran",
+					"jumlah", "total", "mengetahui", "disetujui", "kepala desa", "sekretaris",
+				}
+				for _, kw := range invalidPrefixes {
+					if strings.HasPrefix(valLower, kw) {
+						isInvalid = true
+						break
+					}
+				}
+
+				// Filter tambahan untuk "Desa XYZ", "Kecamatan ABC", "Kabupaten DEF"
+				words := strings.Fields(valLower)
+				if len(words) > 0 && len(words) <= 4 {
+					fw := words[0]
+					if fw == "desa" || fw == "kecamatan" || fw == "kabupaten" || fw == "provinsi" {
+						// Pengecualian jika mengandung kata kerja/kegiatan yang valid
+						if !strings.Contains(valLower, "wisata") && !strings.Contains(valLower, "pengembangan") {
+							isInvalid = true
+						}
+					}
+				}
+
+				if isInvalid {
+					continue
+				}
+
 				if len(val) > len(namaProyek) && len(val) > 5 {
 					namaProyek = val
 				}
@@ -156,6 +200,10 @@ func (s *usulanProyekService) ImportExcelRKP(file multipart.File, tahunAnggaran 
 					nilaiRab = rab
 				}
 			}
+		}
+
+		if nilaiRab == 0 {
+			continue
 		}
 
 		newID, _ := uuid.NewV4()
