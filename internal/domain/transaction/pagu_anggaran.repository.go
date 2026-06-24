@@ -47,6 +47,11 @@ func (r *paguAnggaranRepository) ResolveAll(req model.StandardRequest) (data pag
 		searchParams = append(searchParams, "%"+req.Keyword+"%")
 	}
 
+	if req.Tahun != "" {
+		filterBuff.WriteString(" AND p.tahun = ? ")
+		searchParams = append(searchParams, req.Tahun)
+	}
+
 	selectDto := `
 		SELECT p.id, p.tahun, p.sumber_dana_id, s.nama_sumber as sumber_dana_name, p.pagu_estimasi, p.pagu_definitif, p.created_at 
 		FROM pagu_anggaran p

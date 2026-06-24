@@ -49,6 +49,12 @@ type RequestUsulanProyek struct {
 	UserID        uuid.UUID  `json:"-"`
 }
 
+type RequestBulkUpdateStatus struct {
+	IDs           []uuid.UUID `json:"ids" validate:"required"`
+	StatusTahapan string      `json:"statusTahapan" validate:"required"`
+	UserID        uuid.UUID   `json:"-"`
+}
+
 // Alias dari JSON ke DB untuk keamanan sorting di server (Sama seperti Pegawai)
 var ColumnMapUsulanProyek = map[string]interface{}{
 	"id":               "u.id",

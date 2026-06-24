@@ -19,7 +19,9 @@ type UsulanProyekService interface {
 	Update(id string, req RequestUsulanProyek) error
 	Delete(id string, userID uuid.UUID) error
 	ImportExcelRKP(file multipart.File, tahunAnggaran int) (int, error)
-	GetAllData() ([]UsulanProyek, error) // Tambahkan ini di interface
+	GetAllData() ([]UsulanProyek, error)
+	BulkUpdateStatus(req RequestBulkUpdateStatus) error
+	GetAvailableYears() ([]int, error)
 }
 
 type usulanProyekService struct {
@@ -55,6 +57,17 @@ func (s *usulanProyekService) Update(id string, req RequestUsulanProyek) error {
 
 func (s *usulanProyekService) GetAllData() ([]UsulanProyek, error) {
 	return s.repo.GetAllData()
+}
+
+func (s *usulanProyekService) BulkUpdateStatus(req RequestBulkUpdateStatus) error {
+	if len(req.IDs) == 0 {
+		return errors.New("tidak ada ID usulan yang dipilih")
+	}
+	return s.repo.BulkUpdateStatus(req.IDs, req.StatusTahapan, req.UserID)
+}
+
+func (s *usulanProyekService) GetAvailableYears() ([]int, error) {
+	return s.repo.GetAvailableYears()
 }
 
 func (s *usulanProyekService) Delete(id string, userID uuid.UUID) error {

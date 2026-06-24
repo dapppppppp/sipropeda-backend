@@ -108,6 +108,7 @@ func (h *PaguAnggaranHandler) ResolveAll(w http.ResponseWriter, r *http.Request)
 		PageNumber: pageNumber,
 		SortBy:     sortBy,
 		SortType:   sortType,
+		Tahun:      r.URL.Query().Get("tahun"),
 	}
 
 	data, err := h.service.ResolveAll(req)

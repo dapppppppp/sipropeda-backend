@@ -21,6 +21,8 @@ type StandardRequest struct {
 	IgnorePaging     bool   `json:"ignorePaging" validate:"omitempty"`
 	Bulan            string `json:"bulan" validate:"omitempty"`
 	Tahun            string `json:"tahun" validate:"omitempty"`
+	BidangId         string `json:"bidangId" validate:"omitempty"`
+	SumberDanaId     string `json:"sumberDanaId" validate:"omitempty"`
 	// Field tambahan bisa ditaruh di sini jika nanti butuh
 }
 

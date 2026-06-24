@@ -7,6 +7,7 @@ import (
 	"sipropeda-backend/shared/pagination"
 
 	"github.com/gofrs/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type UsulanProyekRepository interface {
@@ -16,7 +17,9 @@ type UsulanProyekRepository interface {
 	Update(data UsulanProyek) error
 	Delete(data UsulanProyek) error
 	BulkInsert(data []UsulanProyek) error
-    GetAllData() ([]UsulanProyek, error) // Tambahkan ini di interface
+    GetAllData() ([]UsulanProyek, error)
+	BulkUpdateStatus(ids []uuid.UUID, statusTahapan string, userID uuid.UUID) error
+	GetAvailableYears() ([]int, error)
 }
 
 type usulanProyekRepository struct {
@@ -46,6 +49,21 @@ func (r *usulanProyekRepository) ResolveAll(req model.StandardRequest) (data pag
 		filterBuff.WriteString(" AND ")
 		filterBuff.WriteString(" concat(u.nama_proyek, u.lokasi, b.nama_bidang, s.nama_sumber) ilike ? ")
 		searchParams = append(searchParams, "%"+req.Keyword+"%")
+	}
+
+	if req.BidangId != "" {
+		filterBuff.WriteString(" AND u.bidang_id = ? ")
+		searchParams = append(searchParams, req.BidangId)
+	}
+
+	if req.SumberDanaId != "" {
+		filterBuff.WriteString(" AND u.sumber_dana_id = ? ")
+		searchParams = append(searchParams, req.SumberDanaId)
+	}
+
+	if req.Tahun != "" {
+		filterBuff.WriteString(" AND u.tahun_anggaran = ? ")
+		searchParams = append(searchParams, req.Tahun)
 	}
 
 	selectDto := `SELECT 
@@ -229,4 +247,31 @@ func (r *usulanProyekRepository) BulkInsert(data []UsulanProyek) error {
 		}
 	}
 	return tx.Commit()
+}
+
+func (r *usulanProyekRepository) BulkUpdateStatus(ids []uuid.UUID, statusTahapan string, userID uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	query := `
+		UPDATE usulan_proyek
+		SET status_tahapan = ?, updated_by = ?, updated_at = NOW()
+		WHERE id IN (?)
+	`
+	query, args, err := sqlx.In(query, statusTahapan, userID, ids)
+	if err != nil {
+		return err
+	}
+	query = r.db.Write.Rebind(query)
+
+	_, err = r.db.Write.Exec(query, args...)
+	return err
+}
+
+func (r *usulanProyekRepository) GetAvailableYears() ([]int, error) {
+	var years []int
+	query := `SELECT DISTINCT tahun_anggaran FROM usulan_proyek WHERE is_deleted = false ORDER BY tahun_anggaran ASC`
+	err := r.db.Read.Select(&years, query)
+	return years, err
 }

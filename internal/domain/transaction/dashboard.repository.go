@@ -33,7 +33,17 @@ func (r *dashboardRepository) GetDashboardStatistik(tahun int) (DashboardData, e
 		SELECT COALESCE(SUM(CASE WHEN pagu_definitif > 0 THEN pagu_definitif ELSE pagu_estimasi END), 0) 
 		FROM pagu_anggaran WHERE tahun = $1 AND is_deleted = false`, tahun)
 
-	// 5. Ambil Top 5 Ranking (Prioritas Tertinggi di tahap RAPBDes atau RKP terbaru)
+	// 5. Hitung Usulan RKP yang Belum Diranking (tidak ada di arsip_perankingan)
+	r.db.Read.Get(&data.BelumRanking, `
+		SELECT COUNT(u.id) 
+		FROM usulan_proyek u
+		LEFT JOIN arsip_perankingan a ON u.id = a.usulan_id
+		WHERE u.tahun_anggaran = $1 
+		  AND u.status_tahapan = 'RKP' 
+		  AND u.is_deleted = false 
+		  AND a.nilai_preferensi_v IS NULL`, tahun)
+
+	// 7. Ambil Top 5 Ranking (Prioritas Tertinggi di tahap RAPBDes atau RKP terbaru)
 	queryTop5 := `
 		SELECT a.ranking, u.nama_proyek, u.lokasi, a.nilai_preferensi_v
 		FROM arsip_perankingan a

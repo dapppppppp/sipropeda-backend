@@ -29,9 +29,11 @@ func (h *UsulanProyekHandler) Router(r chi.Router) {
 			protected.Use(middleware.JWTProtected)
 			protected.Get("/", h.ResolveAll)
 			protected.Get("/all", h.GetAllData) // Route baru untuk Get All (tanpa pagination)
+			protected.Get("/tahun-anggaran", h.GetAvailableYears)
 			protected.Post("/", h.Create)
 			protected.Post("/import", h.ImportExcel)
 			protected.Get("/{id}", h.ResolveByID)
+			protected.Put("/bulk-update-status", h.BulkUpdateStatus)
 			protected.Put("/{id}", h.Update)
 			protected.Delete("/{id}", h.DeleteSoft)
 		})
@@ -86,6 +88,8 @@ func (h *UsulanProyekHandler) ResolveAll(w http.ResponseWriter, r *http.Request)
 	pageNumberStr := r.URL.Query().Get("pageNumber")
 	sortBy := r.URL.Query().Get("sortBy")
 	sortType := r.URL.Query().Get("sortType")
+	bidangId := r.URL.Query().Get("bidangId")
+	sumberDanaId := r.URL.Query().Get("sumberDanaId")
 
 	// Set Default Values
 	if sortBy == "" {
@@ -107,11 +111,14 @@ func (h *UsulanProyekHandler) ResolveAll(w http.ResponseWriter, r *http.Request)
 
 	// Masukkan ke StandardRequest
 	req := model.StandardRequest{
-		Keyword:    keyword,
-		PageSize:   pageSize,
-		PageNumber: pageNumber,
-		SortBy:     sortBy,
-		SortType:   sortType,
+		Keyword:      keyword,
+		PageSize:     pageSize,
+		PageNumber:   pageNumber,
+		SortBy:       sortBy,
+		SortType:     sortType,
+		BidangId:     bidangId,
+		SumberDanaId: sumberDanaId,
+		Tahun:        r.URL.Query().Get("tahun"),
 	}
 
 	// Panggil Service
@@ -137,6 +144,24 @@ func (h *UsulanProyekHandler) GetAllData(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	response.WithJSON(w, http.StatusOK, data)
+}
+
+// GetAvailableYears mengambil daftar tahun anggaran yang tersedia
+// @Summary Mengambil daftar tahun anggaran yang tersedia
+// @Tags Usulan Proyek
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Success 200 {object} response.Base
+// @Router /v1/usulan-proyek/tahun-anggaran [get]
+func (h *UsulanProyekHandler) GetAvailableYears(w http.ResponseWriter, r *http.Request) {
+	years, err := h.service.GetAvailableYears()
+	if err != nil {
+		response.WithError(w, err)
+		return
+	}
+
+	response.WithJSON(w, http.StatusOK, years)
 }
 
 // ResolveByID mengambil data Usulan Proyek berdasarkan ID
@@ -192,6 +217,36 @@ func (h *UsulanProyekHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Usulan Proyek successfully updated"})
+}
+
+// BulkUpdateStatus mengubah status beberapa Usulan Proyek sekaligus
+// @Summary Update status masal Usulan Proyek
+// @Tags Usulan Proyek
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Param body body transaction.RequestBulkUpdateStatus true "Data yang akan diedit masal"
+// @Success 200 {object} response.Base
+// @Router /v1/usulan-proyek/bulk-update-status [put]
+func (h *UsulanProyekHandler) BulkUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	var req transaction.RequestBulkUpdateStatus
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WithError(w, errors.New("invalid JSON body"))
+		return
+	}
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	if !ok {
+		response.WithJSON(w, http.StatusUnauthorized, map[string]string{"error": "User ID tidak ditemukan"})
+		return
+	}
+	req.UserID = userID
+
+	if err := h.service.BulkUpdateStatus(req); err != nil {
+		response.WithError(w, err)
+		return
+	}
+	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Status Usulan Proyek successfully updated in bulk"})
 }
 
 // DeleteSoft menghapus data Usulan Proyek
