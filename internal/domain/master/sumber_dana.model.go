@@ -22,6 +22,12 @@ type RequestSumberDana struct {
 	NamaSumber string    `json:"namaSumber" validate:"required" example:"Dana Desa (DD)"`
 }
 
+// ColumnMapSumberDana untuk mapping sorting dinamis dari FE ke SQL
+var ColumnMapSumberDana = map[string]interface{}{
+	"namaSumber": "nama_sumber",
+	"createdAt":  "created_at",
+}
+
 // NewSumberDanaFormat memproses pembuatan atau update data Sumber Dana
 func (s *SumberDana) NewSumberDanaFormat(reqFormat RequestSumberDana) (newSumberDana SumberDana) {
 	now := time.Now()

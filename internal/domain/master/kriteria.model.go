@@ -6,14 +6,13 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-// Kriteria merepresentasikan tabel m_kriteria di database
 type Kriteria struct {
 	ID        uuid.UUID  `db:"id" json:"id"`
-	Kode      *string    `db:"kode" json:"kode"` // Tambahan kolom kode
+	Kode      *string    `db:"kode" json:"kode"`
 	Nama      string     `db:"nama" json:"nama"`
 	Bobot     float64    `db:"bobot" json:"bobot"`
 	Jenis     string     `db:"jenis" json:"jenis"`
-	IsActive  bool       `db:"is_active" json:"isActive"` // Tambahan kolom is_active
+	IsActive  bool       `db:"is_active" json:"isActive"`
 	CreatedAt *time.Time `db:"created_at" json:"createdAt"`
 	CreatedBy *uuid.UUID `db:"created_by" json:"createdBy"`
 	UpdatedAt *time.Time `db:"updated_at" json:"updatedAt"`
@@ -22,20 +21,18 @@ type Kriteria struct {
 	IsDeleted bool       `db:"is_deleted" json:"isDeleted"`
 }
 
-// RequestKriteriaFormat adalah format JSON yang dikirim dari Frontend (Vue)
 type RequestKriteriaFormat struct {
 	ID     uuid.UUID `json:"id"`
-	Kode   string    `json:"kode" validate:"required" example:"C1"` // Tambahan wajib diisi
+	Kode   string    `json:"kode" validate:"required" example:"C1"`
 	Nama   string    `json:"nama" validate:"required"`
 	Bobot  float64   `json:"bobot" validate:"required"`
 	Jenis  string    `json:"jenis" validate:"required,oneof=benefit cost"`
-	UserID uuid.UUID `json:"-"` // Tidak dikirim dari FE, diambil dari token
+	UserID uuid.UUID `json:"-"`
 }
 
-// ColumnMapKriteria untuk mapping sorting di FE ke kolom Database
 var ColumnMapKriteria = map[string]interface{}{
 	"id":        "id",
-	"kode":      "kode", // Tambahan mapping kode
+	"kode":      "kode",
 	"nama":      "nama",
 	"bobot":     "bobot",
 	"jenis":     "jenis",
@@ -44,25 +41,24 @@ var ColumnMapKriteria = map[string]interface{}{
 	"updatedAt": "updated_at",
 }
 
-// NewKriteriaFormat memproses request pembuatan/update Kriteria baru
 func (k *Kriteria) NewKriteriaFormat(reqFormat RequestKriteriaFormat) (newKriteria Kriteria, err error) {
 	now := time.Now()
 	if reqFormat.ID == uuid.Nil {
-		newID, _ := uuid.NewV4() // Generate UUID baru
+		newID, _ := uuid.NewV4()
 		newKriteria = Kriteria{
 			ID:        newID,
-			Kode:      &reqFormat.Kode, // Mapping dari request ke database
+			Kode:      &reqFormat.Kode,
 			Nama:      reqFormat.Nama,
 			Bobot:     reqFormat.Bobot,
 			Jenis:     reqFormat.Jenis,
-			IsActive:  true, // Default aktif saat dibuat pertama kali
+			IsActive:  true,
 			CreatedAt: &now,
 			CreatedBy: &reqFormat.UserID,
 		}
 	} else {
 		newKriteria = Kriteria{
 			ID:        reqFormat.ID,
-			Kode:      &reqFormat.Kode, // Mapping dari request ke database
+			Kode:      &reqFormat.Kode,
 			Nama:      reqFormat.Nama,
 			Bobot:     reqFormat.Bobot,
 			Jenis:     reqFormat.Jenis,
@@ -73,7 +69,6 @@ func (k *Kriteria) NewKriteriaFormat(reqFormat RequestKriteriaFormat) (newKriter
 	return
 }
 
-// SoftDelete menandai data Kriteria sebagai terhapus
 func (k *Kriteria) SoftDelete(userID uuid.UUID) {
 	now := time.Now()
 	k.IsDeleted = true

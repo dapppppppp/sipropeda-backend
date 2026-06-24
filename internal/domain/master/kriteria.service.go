@@ -1,12 +1,16 @@
 package master
 
 import (
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
 	"github.com/gofrs/uuid"
 )
 
 type KriteriaService interface {
 	Create(req RequestKriteriaFormat) error
 	ResolveAll() ([]Kriteria, error)
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (Kriteria, error)
 	Update(id string, req RequestKriteriaFormat) error
 	Delete(id string, userID uuid.UUID) error
@@ -29,6 +33,10 @@ func (s *kriteriaService) ResolveAll() ([]Kriteria, error) {
 	return s.repository.ResolveAll()
 }
 
+func (s *kriteriaService) ResolvePaging(req model.StandardRequest) (pagination.Response, error) {
+	return s.repository.ResolvePaging(req)
+}
+
 func (s *kriteriaService) ResolveByID(id uuid.UUID) (Kriteria, error) {
 	return s.repository.ResolveByID(id)
 }
@@ -39,7 +47,6 @@ func (s *kriteriaService) Update(id string, req RequestKriteriaFormat) error {
 		return err
 	}
 
-	// Masukkan ID ke request agar diformat untuk Update
 	req.ID = parsedID
 	updatedKriteria, _ := (&Kriteria{}).NewKriteriaFormat(req)
 

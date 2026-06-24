@@ -17,7 +17,7 @@ type UserRepository interface {
 	Update(data User) error
 	Delete(data User) error
 	UpdatePassword(id uuid.UUID, hashedPassword string) error
-	UpdateFoto(id string, fotoPath string) error // <-- Tambahkan ini
+	UpdateFoto(id string, fotoPath string) error
 }
 
 type userRepository struct {
@@ -30,7 +30,6 @@ func ProvideUserRepository(db *infras.PostgresqlConn) UserRepository {
 
 func (r *userRepository) GetByUsername(username string) (User, error) {
 	var user User
-	// Tambahkan u.foto pada SELECT
 	query := `
 		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, u.foto, r.name as role_name 
 		FROM users u
@@ -40,14 +39,14 @@ func (r *userRepository) GetByUsername(username string) (User, error) {
 	err := r.db.Read.Get(&user, query, username)
 	return user, err
 }
-// UpdateFoto memperbarui path foto di tabel users
+
 func (r *userRepository) UpdateFoto(id string, fotoPath string) error {
 	query := `UPDATE users SET foto = $1, updated_at = NOW() WHERE id = $2 AND is_deleted = false`
 	_, err := r.db.Write.Exec(query, fotoPath, id)
 	return err
 }
+
 func (r *userRepository) Create(data User) error {
-	// Insert ke kolom nama
 	query := `INSERT INTO users (id, nama, email, username, password, role_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := r.db.Write.Exec(query, data.ID, data.Name, data.Email, data.Username, data.Password, data.RoleID, data.CreatedAt)
 	return err
@@ -57,7 +56,6 @@ func (r *userRepository) ResolveAll(req model.StandardRequest, roleIdFilter stri
 	var searchParams []interface{}
 	var queryBuff bytes.Buffer
 
-	// Select u.nama
 	querySelect := `SELECT u.id, u.nama, u.email, u.username, u.role_id, r.name as role_name, u.created_at, u.updated_at 
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id `
@@ -66,7 +64,6 @@ func (r *userRepository) ResolveAll(req model.StandardRequest, roleIdFilter stri
 	searchParams = append(searchParams, false)
 
 	if req.Keyword != "" {
-		// Pencarian menggunakan u.nama
 		queryBuff.WriteString(" AND (u.nama ILIKE ? OR u.username ILIKE ? OR u.email ILIKE ? OR r.name ILIKE ?) ")
 		keyword := "%" + req.Keyword + "%"
 		searchParams = append(searchParams, keyword, keyword, keyword, keyword)
@@ -90,7 +87,19 @@ func (r *userRepository) ResolveAll(req model.StandardRequest, roleIdFilter stri
 		return
 	}
 
-	queryBuff.WriteString(" ORDER BY u.created_at DESC ")
+	// Sorting Dinamis Ditambahkan
+	orderByColumn, ok := ColumnMapUser[req.SortBy].(string)
+	if !ok {
+		orderByColumn = "u.created_at"
+	}
+	
+	sortDir := req.SortType
+	if sortDir == "" {
+		sortDir = "desc"
+	}
+
+	queryBuff.WriteString(" ORDER BY " + orderByColumn + " " + sortDir)
+	
 	offset := (req.PageNumber - 1) * req.PageSize
 	queryBuff.WriteString(" LIMIT ? OFFSET ? ")
 	searchParams = append(searchParams, req.PageSize, offset)
@@ -118,7 +127,6 @@ func (r *userRepository) ResolveAll(req model.StandardRequest, roleIdFilter stri
 
 func (r *userRepository) ResolveByID(id uuid.UUID) (User, error) {
 	var data User
-	// Tambahkan u.foto pada SELECT
 	query := `
 		SELECT u.id, u.nama, u.email, u.username, u.password, u.role_id, u.foto, r.name as role_name, u.created_at, u.updated_at 
 		FROM users u
@@ -130,7 +138,6 @@ func (r *userRepository) ResolveByID(id uuid.UUID) (User, error) {
 }
 
 func (r *userRepository) Update(data User) error {
-	// Update kolom nama
 	query := `
 		UPDATE users 
 		SET nama = $1, email = $2, username = $3, password = $4, role_id = $5, updated_at = $6

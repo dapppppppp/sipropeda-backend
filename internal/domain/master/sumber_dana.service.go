@@ -1,10 +1,16 @@
 package master
 
-import "github.com/gofrs/uuid"
+import (
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
+	"github.com/gofrs/uuid"
+)
 
 type SumberDanaService interface {
 	Create(req RequestSumberDana) error
-	ResolveAll() ([]SumberDana, error)
+	ResolveAll() ([]SumberDana, error) // Untuk dropdown
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error) // Untuk tabel paging
 	ResolveByID(id uuid.UUID) (SumberDana, error)
 	Update(id string, req RequestSumberDana) error
 	Delete(id string) error
@@ -25,6 +31,10 @@ func (s *sumberDanaService) Create(req RequestSumberDana) error {
 
 func (s *sumberDanaService) ResolveAll() ([]SumberDana, error) {
 	return s.repo.ResolveAll()
+}
+
+func (s *sumberDanaService) ResolvePaging(req model.StandardRequest) (pagination.Response, error) {
+	return s.repo.ResolvePaging(req)
 }
 
 func (s *sumberDanaService) ResolveByID(id uuid.UUID) (SumberDana, error) {

@@ -8,15 +8,15 @@ import (
 
 // ArsipPerankingan merepresentasikan tabel arsip_perankingan di database
 type ArsipPerankingan struct {
-	ID               uuid.UUID  `db:"id" json:"id"`
-	UsulanID         uuid.UUID  `db:"usulan_id" json:"usulanId"`
-	UsulanName       *string    `db:"usulan_name" json:"usulanName,omitempty"` // Dari JOIN usulan_proyek
-	NilaiPreferensiV float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"`
-	Ranking          int        `db:"ranking" json:"ranking"`
-	StatusUsulanSaatIni string `db:"status_usulan_saat_ini" json:"statusUsulanSaatIni"`
-	TahapVersi       string     `db:"tahap_versi" json:"tahapVersi"`
-	DetailKalkulasi  *string    `db:"detail_kalkulasi" json:"detailKalkulasi"` // Disimpan sebagai JSON string
-	CreatedAt        *time.Time `db:"created_at" json:"createdAt"`
+	ID                  uuid.UUID  `db:"id" json:"id"`
+	UsulanID            uuid.UUID  `db:"usulan_id" json:"usulanId"`
+	UsulanName          *string    `db:"usulan_name" json:"usulanName,omitempty"` // Dari JOIN usulan_proyek
+	NilaiPreferensiV    float64    `db:"nilai_preferensi_v" json:"nilaiPreferensiV"`
+	Ranking             int        `db:"ranking" json:"ranking"`
+	StatusUsulanSaatIni string     `db:"status_usulan_saat_ini" json:"statusUsulanSaatIni"`
+	TahapVersi          string     `db:"tahap_versi" json:"tahapVersi"`
+	DetailKalkulasi     *string    `db:"detail_kalkulasi" json:"detailKalkulasi"` // Disimpan sebagai JSON string
+	CreatedAt           *time.Time `db:"created_at" json:"createdAt"`
 }
 
 // RequestHitungTopsis adalah input dari Frontend untuk memicu kalkulasi
@@ -38,4 +38,13 @@ type MatriksPenilaian struct {
 	UsulanID   uuid.UUID `db:"usulan_id"`
 	KriteriaID uuid.UUID `db:"kriteria_id"`
 	NilaiInput float64   `db:"nilai_input"`
+}
+
+// ColumnMapArsipPerankingan untuk mapping sorting dinamis dari FE ke SQL
+var ColumnMapArsipPerankingan = map[string]interface{}{
+	"ranking":          "a.ranking",
+	"usulanName":       "u.nama_proyek",
+	"tahapVersi":       "a.tahap_versi",
+	"nilaiPreferensiV": "a.nilai_preferensi_v",
+	"createdAt":        "a.created_at",
 }

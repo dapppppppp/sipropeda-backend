@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv" 
 
 	"sipropeda-backend/internal/domain/transaction"
+	"sipropeda-backend/shared/model" 
 	"sipropeda-backend/transport/http/middleware"
 	"sipropeda-backend/transport/http/response"
 
@@ -69,10 +71,47 @@ func (h *PaguAnggaranHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Tags Pagu Anggaran
 // @Produce json
 // @Param Authorization header string true "Bearer <token>"
+// @Param q query string false "Kata kunci pencarian"
+// @Param pageSize query int false "Jumlah data per halaman"
+// @Param pageNumber query int false "Nomor halaman yang diambil"
+// @Param sortBy query string false "Parameter pengurutan"
+// @Param sortType query string false "Tipe pengurutan [asc | desc]"
 // @Success 200 {object} response.Base
 // @Router /v1/pagu-anggaran [get]
 func (h *PaguAnggaranHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
-	data, err := h.service.ResolveAll()
+	keyword := r.URL.Query().Get("q")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	sortBy := r.URL.Query().Get("sortBy")
+	sortType := r.URL.Query().Get("sortType")
+
+	if sortBy == "" {
+		sortBy = "createdAt"
+	}
+	if sortType == "" {
+		sortType = "desc"
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize <= 0 {
+		pageSize = 10
+	}
+
+	pageNumber, err := strconv.Atoi(pageNumberStr)
+	if err != nil || pageNumber <= 0 {
+		pageNumber = 1
+	}
+
+	req := model.StandardRequest{
+		Keyword:    keyword,
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		SortBy:     sortBy,
+		SortType:   sortType,
+		Tahun:      r.URL.Query().Get("tahun"),
+	}
+
+	data, err := h.service.ResolveAll(req)
 	if err != nil {
 		response.WithError(w, err)
 		return
@@ -145,7 +184,7 @@ func (h *PaguAnggaranHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Router /v1/pagu-anggaran/{id} [delete]
 func (h *PaguAnggaranHandler) DeleteSoft(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	
+
 	userID, ok := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
 	if !ok {
 		response.WithJSON(w, http.StatusUnauthorized, map[string]string{"error": "User ID tidak ditemukan"})

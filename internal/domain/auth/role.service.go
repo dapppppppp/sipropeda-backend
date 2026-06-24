@@ -1,10 +1,16 @@
 package auth
 
-import "github.com/gofrs/uuid"
+import (
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
+
+	"github.com/gofrs/uuid"
+)
 
 type RoleService interface {
 	CreateRole(req RequestRole) error
 	ResolveAll() ([]Role, error)
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error)
 	ResolveByID(id uuid.UUID) (Role, error)
 	UpdateRole(id string, req RequestRole) error
 	DeleteRole(id string) error
@@ -25,6 +31,10 @@ func (s *roleService) CreateRole(req RequestRole) error {
 
 func (s *roleService) ResolveAll() ([]Role, error) {
 	return s.repo.ResolveAll()
+}
+
+func (s *roleService) ResolvePaging(req model.StandardRequest) (pagination.Response, error) {
+	return s.repo.ResolvePaging(req)
 }
 
 func (s *roleService) ResolveByID(id uuid.UUID) (Role, error) {

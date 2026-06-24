@@ -81,9 +81,7 @@ func ProvideMenuRepositoryPostgreSQL(db *infras.PostgresqlConn) *MenuRepositoryP
 }
 
 func (r *MenuRepositoryPostgreSQL) ResolveMenuByRoleID(req MenuRequest) (data []MenuResponse, err error) {
-	// PERBAIKAN: Inisialisasi slice agar tidak mereturn null ketika kosong
 	data = make([]MenuResponse, 0)
-
 	criteria := ` WHERE m.level = 1 AND coalesce(m.is_deleted,false)=false AND mr.role_id::varchar=$1 
         AND mr.permission ilike '%VIEW%' `
 	if req.CommodityId != "" {
@@ -102,9 +100,7 @@ func (r *MenuRepositoryPostgreSQL) ResolveMenuByRoleID(req MenuRequest) (data []
 }
 
 func (r *MenuRepositoryPostgreSQL) ResolveMenuByParentID(req MenuRequest) (data []MenuResponse, err error) {
-	// PERBAIKAN: Inisialisasi slice agar tidak mereturn null ketika kosong
 	data = make([]MenuResponse, 0)
-
 	criteria := ` WHERE coalesce(m.is_deleted,false)=false AND mr.role_id::varchar=$1 AND m.parent_id::varchar=$2 
         AND mr.permission ilike '%VIEW%' `
 	if req.CommodityId != "" {
@@ -123,9 +119,7 @@ func (r *MenuRepositoryPostgreSQL) ResolveMenuByParentID(req MenuRequest) (data 
 }
 
 func (r *MenuRepositoryPostgreSQL) ResolveMenuByRoleIDTrx(req MenuRequest) (data []MenuResponseTrx, err error) {
-	// PERBAIKAN: Inisialisasi slice agar tidak mereturn null ketika kosong
 	data = make([]MenuResponseTrx, 0)
-
 	criteria := ` WHERE m.level = 1 AND coalesce(m.is_deleted,false)=false ORDER BY m.seq ASC `
 	err = r.DB.Read.Select(&data, menuRoleQuery.SelectDTOTrx+criteria, req.RoleId, req.CommodityId)
 	if err != nil {
@@ -136,9 +130,7 @@ func (r *MenuRepositoryPostgreSQL) ResolveMenuByRoleIDTrx(req MenuRequest) (data
 }
 
 func (r *MenuRepositoryPostgreSQL) ResolveMenuByParentIDTrx(req MenuRequest) (data []MenuResponseTrx, err error) {
-	// PERBAIKAN: Inisialisasi slice agar tidak mereturn null ketika kosong
 	data = make([]MenuResponseTrx, 0)
-
 	criteria := ` WHERE coalesce(m.is_deleted,false) = false AND m.parent_id = $3 ORDER BY m.seq ASC `
 	err = r.DB.Read.Select(&data, menuRoleQuery.SelectDTOTrx+criteria, req.RoleId, req.CommodityId, req.ParentId)
 	if err != nil {
@@ -149,9 +141,7 @@ func (r *MenuRepositoryPostgreSQL) ResolveMenuByParentIDTrx(req MenuRequest) (da
 }
 
 func (r *MenuRepositoryPostgreSQL) GetAllMenu() (dataMenu []Menu, err error) {
-	// PERBAIKAN: Inisialisasi slice agar tidak mereturn null ketika kosong
 	dataMenu = make([]Menu, 0)
-
 	criteria := ` WHERE COALESCE(is_deleted, false) = false ORDER BY seq ASC `
 	err = r.DB.Read.Select(&dataMenu, menuQuery.Select+criteria)
 	if err != nil {
@@ -185,10 +175,20 @@ func (r *MenuRepositoryPostgreSQL) ResolveAll(req model.StandardRequest) (dataMe
 		return
 	}
 
-	searchRoleBuff.WriteString("order by " + ColumnMappMenu[req.SortBy].(string) + " " + req.SortType + " ")
+	// 👇 PERBAIKAN KRUSIAL: Mencegah Panic pada SortBy
+	orderByColumn, ok := ColumnMappMenu[req.SortBy].(string)
+	if !ok {
+		orderByColumn = "m.created_at" // Default fallback jika SortBy kosong
+	}
+	sortType := req.SortType
+	if sortType == "" {
+		sortType = "DESC"
+	}
+	searchRoleBuff.WriteString(" ORDER BY " + orderByColumn + " " + sortType + " ")
+	// 👆 BATAS PERBAIKAN
 
 	offset := (req.PageNumber - 1) * req.PageSize
-	searchRoleBuff.WriteString("limit ? offset ? ")
+	searchRoleBuff.WriteString(" LIMIT ? OFFSET ? ")
 	searchParams = append(searchParams, req.PageSize)
 	searchParams = append(searchParams, offset)
 

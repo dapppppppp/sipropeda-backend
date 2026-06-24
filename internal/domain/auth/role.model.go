@@ -2,6 +2,7 @@ package auth
 
 import (
 	"time"
+
 	"github.com/gofrs/uuid"
 )
 
@@ -21,6 +22,13 @@ type RequestRole struct {
 	ID          uuid.UUID `json:"id" swaggerignore:"true"`
 	Name        string    `json:"name" validate:"required" example:"Admin Desa"`
 	Description string    `json:"description" example:"Hak akses penuh untuk mengelola data master"`
+}
+
+// ColumnMapRole untuk mapping sorting dari FE ke SQL
+var ColumnMapRole = map[string]interface{}{
+	"name":        "name",
+	"description": "description",
+	"createdAt":   "created_at",
 }
 
 func (r *Role) NewRoleFormat(req RequestRole) (newRole Role) {

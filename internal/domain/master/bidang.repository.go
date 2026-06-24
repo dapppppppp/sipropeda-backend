@@ -1,14 +1,18 @@
 package master
 
 import (
+	"bytes"
 	"sipropeda-backend/infras"
+	"sipropeda-backend/shared/model"
+	"sipropeda-backend/shared/pagination"
 
 	"github.com/gofrs/uuid"
 )
 
 type BidangPembangunanRepository interface {
 	Create(data BidangPembangunan) error
-	ResolveAll() ([]BidangPembangunan, error)
+	ResolveAll() ([]BidangPembangunan, error) // Endpoint Dropdown
+	ResolvePaging(req model.StandardRequest) (pagination.Response, error) // Endpoint Pagination
 	ResolveByID(id uuid.UUID) (BidangPembangunan, error)
 	Update(data BidangPembangunan) error
 	Delete(data BidangPembangunan) error
@@ -41,6 +45,67 @@ func (r *bidangPembangunanRepository) ResolveAll() ([]BidangPembangunan, error) 
 	`
 	err := r.db.Read.Select(&data, query)
 	return data, err
+}
+
+func (r *bidangPembangunanRepository) ResolvePaging(req model.StandardRequest) (data pagination.Response, err error) {
+	var searchParams []interface{}
+	var filterBuff bytes.Buffer
+
+	filterBuff.WriteString(" WHERE is_deleted = false")
+
+	if req.Keyword != "" {
+		filterBuff.WriteString(" AND nama_bidang ILIKE ? ")
+		searchParams = append(searchParams, "%"+req.Keyword+"%")
+	}
+
+	selectDto := `SELECT id, nama_bidang, created_at, updated_at FROM bidang_pembangunan`
+
+	// 1. Hitung Total Data
+	countQuery := r.db.Read.Rebind("SELECT count(*) FROM (" + selectDto + filterBuff.String() + ")x")
+	var totalData int
+	err = r.db.Read.QueryRowx(countQuery, searchParams...).Scan(&totalData)
+	if err != nil {
+		return
+	}
+
+	if totalData < 1 {
+		data.Items = []BidangPembangunan{}
+		data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+		return data, nil
+	}
+
+	// 2. Sorting Dinamis
+	orderByColumn, ok := ColumnMapBidangPembangunan[req.SortBy].(string)
+	if !ok {
+		orderByColumn = "created_at"
+	}
+	filterBuff.WriteString(" ORDER BY " + orderByColumn + " " + req.SortType)
+
+	// 3. Limit Offset
+	offset := (req.PageNumber - 1) * req.PageSize
+	filterBuff.WriteString(" LIMIT ? OFFSET ? ")
+	searchParams = append(searchParams, req.PageSize, offset)
+
+	searchQuery := r.db.Read.Rebind(selectDto + filterBuff.String())
+	rows, err := r.db.Read.Queryx(searchQuery, searchParams...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var items []BidangPembangunan
+	for rows.Next() {
+		var item BidangPembangunan
+		err = rows.StructScan(&item)
+		if err != nil {
+			return
+		}
+		items = append(items, item)
+	}
+
+	data.Items = items
+	data.Meta = pagination.CreateMeta(totalData, req.PageSize, req.PageNumber)
+	return data, nil
 }
 
 func (r *bidangPembangunanRepository) ResolveByID(id uuid.UUID) (BidangPembangunan, error) {

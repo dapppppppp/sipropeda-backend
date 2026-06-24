@@ -25,9 +25,18 @@ type RequestPaguAnggaran struct {
 	ID            uuid.UUID `json:"id" swaggerignore:"true"`
 	Tahun         int       `json:"tahun" validate:"required" example:"2026"`
 	SumberDanaID  uuid.UUID `json:"sumberDanaId" validate:"required" example:"masukkan-uuid-sumber-dana"`
-	PaguEstimasi  float64   `json:"paguEstimasi" validate:"required" example:"500000000"` // Estimasi awal (Bisa auto-fill dari frontend)
-	PaguDefinitif float64   `json:"paguDefinitif" example:"500000000"`                    // Pagu fix saat RAPBDes (Bisa 0 di awal)
-	UserID        uuid.UUID `json:"-"`                                                    // Dari JWT
+	PaguEstimasi  float64   `json:"paguEstimasi" validate:"required" example:"500000000"` 
+	PaguDefinitif float64   `json:"paguDefinitif" example:"500000000"`                    
+	UserID        uuid.UUID `json:"-"`                                                    
+}
+
+// ColumnMapPaguAnggaran untuk mapping sorting dinamis dari FE ke SQL
+var ColumnMapPaguAnggaran = map[string]interface{}{
+	"tahun":          "p.tahun",
+	"sumberDanaName": "s.nama_sumber",
+	"paguEstimasi":   "p.pagu_estimasi",
+	"paguDefinitif":  "p.pagu_definitif",
+	"createdAt":      "p.created_at",
 }
 
 func (p *PaguAnggaran) NewPaguAnggaranFormat(req RequestPaguAnggaran) (newData PaguAnggaran) {

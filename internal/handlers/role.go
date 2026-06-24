@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"sipropeda-backend/internal/domain/auth"
+	"sipropeda-backend/shared/model"
 	"sipropeda-backend/transport/http/middleware"
 	"sipropeda-backend/transport/http/response"
 
@@ -24,9 +26,10 @@ func ProvideRoleHandler(roleService auth.RoleService) RoleHandler {
 func (h *RoleHandler) Router(r chi.Router) {
 	r.Route("/roles", func(rc chi.Router) {
 		rc.Group(func(protected chi.Router) {
-			protected.Use(middleware.JWTProtected) // Middleware dari Sipropeda
+			protected.Use(middleware.JWTProtected)
 			protected.Get("/", h.ResolveAll)
-			protected.Get("/all", h.GetAllData) // Sama dengan ResolveAll untuk saat ini
+			protected.Get("/all", h.GetAllData) 
+			protected.Get("/page", h.ResolvePaging) // Endpoint khusus pagination tabel
 			protected.Post("/", h.CreateRole)
 			protected.Get("/{id}", h.ResolveByID)
 			protected.Put("/{id}", h.UpdateRole)
@@ -35,7 +38,7 @@ func (h *RoleHandler) Router(r chi.Router) {
 	})
 }
 
-// ResolveAll mengambil semua data Role
+// ResolveAll mengambil semua data Role (Untuk Dropdown)
 // @Summary Ambil semua data Role
 // @Tags Roles
 // @Produce json
@@ -43,7 +46,6 @@ func (h *RoleHandler) Router(r chi.Router) {
 // @Success 200 {object} response.Base
 // @Router /v1/roles [get]
 func (h *RoleHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
-	// (Pagination dilewati agar kompatibel dengan modul saat ini)
 	data, err := h.RoleService.ResolveAll()
 	if err != nil {
 		response.WithError(w, err)
@@ -61,6 +63,58 @@ func (h *RoleHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
 // @Router /v1/roles/all [get]
 func (h *RoleHandler) GetAllData(w http.ResponseWriter, r *http.Request) {
 	data, err := h.RoleService.ResolveAll()
+	if err != nil {
+		response.WithError(w, err)
+		return
+	}
+	response.WithJSON(w, http.StatusOK, data)
+}
+
+// ResolvePaging mengambil data Role secara terpaginasi
+// @Summary Ambil Data Role (Pagination)
+// @Tags Roles
+// @Produce json
+// @Param Authorization header string true "Bearer <token>"
+// @Param q query string false "Kata kunci pencarian"
+// @Param pageSize query int false "Jumlah data per halaman"
+// @Param pageNumber query int false "Nomor halaman yang diambil"
+// @Param sortBy query string false "Parameter pengurutan"
+// @Param sortType query string false "Tipe pengurutan [asc | desc]"
+// @Success 200 {object} response.Base
+// @Router /v1/roles/page [get]
+func (h *RoleHandler) ResolvePaging(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("q")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	sortBy := r.URL.Query().Get("sortBy")
+	sortType := r.URL.Query().Get("sortType")
+
+	if sortBy == "" {
+		sortBy = "createdAt"
+	}
+	if sortType == "" {
+		sortType = "desc"
+	}
+
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	pageNumber, _ := strconv.Atoi(pageNumberStr)
+	if pageNumber <= 0 {
+		pageNumber = 1
+	}
+
+	req := model.StandardRequest{
+		Keyword:    keyword,
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		SortBy:     sortBy,
+		SortType:   sortType,
+	}
+
+	data, err := h.RoleService.ResolvePaging(req)
 	if err != nil {
 		response.WithError(w, err)
 		return

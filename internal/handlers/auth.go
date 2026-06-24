@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv" // Ditambahkan untuk konversi string ke int
+	"strconv"
 
 	"sipropeda-backend/internal/domain/auth"
-	"sipropeda-backend/shared/model" // Ditambahkan untuk StandardRequest
+	"sipropeda-backend/shared/model"
 	"sipropeda-backend/transport/http/response"
 
 	"github.com/go-chi/chi"
@@ -22,12 +22,10 @@ func ProvideAuthHandler(service auth.UserService) AuthHandler {
 	return AuthHandler{service: service}
 }
 
-// Router untuk Endpoint Public (Login)
 func (h *AuthHandler) Router(r chi.Router) {
 	r.Post("/login", h.Login)
 }
 
-// UserRouter untuk Endpoint Private CRUD User
 func (h *AuthHandler) UserRouter(r chi.Router) {
 	r.Route("/user", func(rc chi.Router) {
 		rc.Get("/", h.ResolveAll)
@@ -35,8 +33,8 @@ func (h *AuthHandler) UserRouter(r chi.Router) {
 		rc.Put("/{id}", h.Update)
 		rc.Get("/{id}", h.ResolveByID)
 		rc.Delete("/{id}", h.DeleteSoft)
-		rc.Put("/reset-password", h.ResetPassword) // <-- Route Reset Password Ditambahkan
-		rc.Post("/upload", h.UploadFoto) // <-- Tambahkan route ini
+		rc.Put("/reset-password", h.ResetPassword)
+		rc.Post("/upload", h.UploadFoto)
 	})
 }
 
@@ -95,7 +93,6 @@ func (h *AuthHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} response.Base
 // @Router /v1/user [get]
 func (h *AuthHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
-	// --- PERBAIKAN: Menangkap parameter Query untuk Pagination & Search ---
 	keyword := r.URL.Query().Get("q")
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	pageNumberStr := r.URL.Query().Get("pageNumber")
@@ -112,12 +109,12 @@ func (h *AuthHandler) ResolveAll(w http.ResponseWriter, r *http.Request) {
 
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil || pageSize == 0 {
-		pageSize = 10 // Default page size
+		pageSize = 10 
 	}
 
 	pageNumber, err := strconv.Atoi(pageNumberStr)
 	if err != nil || pageNumber == 0 {
-		pageNumber = 1 // Default page number
+		pageNumber = 1 
 	}
 
 	req := model.StandardRequest{
